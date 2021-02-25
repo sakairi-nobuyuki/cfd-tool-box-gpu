@@ -5,15 +5,12 @@
 #define NN 2000000
 
 
-__global__
 void sum_array (double *array_1, double *array_2, double *array_3, int n_array) {
     int i, j, n;
-    i = blockIdx.x * blockDim.x + threadIdx.x;
-
     n = 10000;
 
     for (j = 0; j < n; j++) {
-        if (i < NN)  array_3[i] = array_1[i] + array_3[i];        
+        for (i = 0; i < NN; i++)  array_3[i] = array_1[i] + array_3[i];        
     }
     
 }
@@ -40,11 +37,7 @@ int main () {
     double *d_array_1, *d_array_2, *d_array_3;
     size_t n_bytes = NN * sizeof (double);
     time_t start_time, end_time;
-    dim3 Grid, Block;
-
-    Grid.x = NN / 196 + 1;
-    Block.x = 196;
-
+    
     printf ("start calc\n");
     start_time = time (NULL);
 
@@ -60,41 +53,11 @@ int main () {
 
     printf ("initialize memory\n");
 
+    printf ("start calc\n");
 
-    printf ("cuda memory allocation\n");
+    sum_array (array_1, array_2, array_3, n_bytes);
 
-    cudaMalloc ((void**)&d_array_1, n_bytes);
-    cudaMalloc ((void**)&d_array_2, n_bytes);
-    cudaMalloc ((void**)&d_array_3, n_bytes);
-
-    printf ("cuda memory allocation finished\n");
-
-
-    printf ("cuda memory copy\n");
-
-    cudaMemcpy (d_array_1, array_1, n_bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy (d_array_2, array_2, n_bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy (d_array_3, array_3, n_bytes, cudaMemcpyHostToDevice);
-
-    printf ("cuda memory copy finished\n");
-
-    //printf ("inp array1\n");
-    //print_result (array_1, NN);
-    //printf ("inp array2\n");
-    //print_result (array_2, NN);
-    //printf ("inp array3\n");
-    //print_result (array_3, NN);
-
-    printf ("start kernel function\n");
-
-    sum_array<<<Grid, Block>>> (d_array_1, d_array_2, d_array_3, n_bytes);
-
-    cudaDeviceSynchronize();
-    printf ("end kernel function\n");
-
-    cudaMemcpy (array_3, d_array_3, n_bytes, cudaMemcpyDeviceToHost);
-
-    printf ("res array3\n");
+    //printf ("res array3\n");
     //print_result (array_3, NN);
 
     end_time = time (NULL);
