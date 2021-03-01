@@ -29,12 +29,33 @@ void derivertive_array (double *array_in, double *array_out, int n_array) {
     if (i == NN - 1) array_out[i] = array_in[i - 1];
 }
 
+__global__ void solve_diffusion_eq (double *array_in, double *array_out, double rdx2, double dt, int n_array) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 < i && i < NN - 1) array_out[i] = array_out[i] = array_in[i] + 0.5 * (array_in[i + 1] - 2.0 * array_in[i] + array_in[i - 1]) * rdx2 * dt;
+    if (i == 0) array_out[i] = array_in[i + 1];
+    if (i == NN - 1) array_out[i] = array_in[i - 1];
+}
+
+__global__ void renew_vers (double *array_in, double *array_out) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+    array_out[i] = array_in[i];
+}
+
+
 void initialize_array (double *array, int size) {
     int i;
 
 //    for (i = 0; i < NN; i++)  array[i] = (double) rand ();
     //for (i = 0; i < NN; i++)  array[i] = 1.0;
-    for (i = 0; i < NN; i++)  array[i] = (double) i;
+    //for (i = 0; i < NN; i++)  array[i] = (double) i;
+
+    for (i = 0; i < NN; i++) {
+        if (i < NN / 3 || 2 * NN/ 3 < i) array[i] = 0.0;
+        else array[i] = 1.0;
+    }
 
 }
 
@@ -42,12 +63,14 @@ void print_result (double *array, int n) {
     int i;
 
 
-    for (i = 0; i < n; i++)  printf ("%.0lf ", array[i]);
+    //for (i = 0; i < n; i++)  printf ("%.0lf ", array[i]);
+    for (i = 0; i < n; i++)  printf ("%.3lf ", array[i]);
     printf ("\n");
 
 }
 
 int main () {
+    int i, n;
     double *array_1, *array_2, *array_3;
     double *d_array_1, *d_array_2, *d_array_3;
     size_t n_bytes = NN * sizeof (double);
@@ -99,8 +122,22 @@ int main () {
 
     printf ("start kernel function\n");
 
+
     //sum_array<<<Grid, Block>>> (d_array_1, d_array_2, d_array_3, n_bytes);
-    derivertive_array<<<Grid, Block>>> (d_array_1, d_array_3, n_bytes);
+    //derivertive_array<<<Grid, Block>>> (d_array_1, d_array_3, n_bytes);
+
+    for (n = 0; n < 1000000; n++) {
+        if (n % 10000 == 0) {
+            cudaMemcpy (array_1, d_array_1, n_bytes, cudaMemcpyDeviceToHost);
+            print_result (array_1, NN);
+        }
+        solve_diffusion_eq <<<Grid, Block>>> (d_array_1, d_array_3, 0.0001, 0.0001, n_bytes);
+        cudaDeviceSynchronize();
+        renew_vers <<<Grid, Block>>> (d_array_3, d_array_1);
+        cudaDeviceSynchronize();
+        
+    }
+
 
     cudaDeviceSynchronize();
     printf ("end kernel function\n");
