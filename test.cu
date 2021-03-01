@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define NN 2000000
+#define NN 20
 
 
 __global__
@@ -10,19 +10,31 @@ void sum_array (double *array_1, double *array_2, double *array_3, int n_array) 
     int i, j, n;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    n = 10000;
+    n = 10;
 
     for (j = 0; j < n; j++) {
-        if (i < NN)  array_3[i] = array_1[i] + array_3[i];        
+        //if (i < NN)  array_3[i] = array_1[i] + array_3[i];        
+        array_3[i] = 2.0 * array_3[i];
     }
     
+}
+
+__global__
+void derivertive_array (double *array_in, double *array_out, int n_array) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 < i && i < NN - 1) array_out[i] = array_in[i] - array_in[i-1];
+    if (i == 0) array_out[i] = array_in[i + 1];
+    if (i == NN - 1) array_out[i] = array_in[i - 1];
 }
 
 void initialize_array (double *array, int size) {
     int i;
 
 //    for (i = 0; i < NN; i++)  array[i] = (double) rand ();
-    for (i = 0; i < NN; i++)  array[i] = 1.0;
+    //for (i = 0; i < NN; i++)  array[i] = 1.0;
+    for (i = 0; i < NN; i++)  array[i] = (double) i;
 
 }
 
@@ -78,8 +90,8 @@ int main () {
 
     printf ("cuda memory copy finished\n");
 
-    //printf ("inp array1\n");
-    //print_result (array_1, NN);
+    printf ("inp array1\n");
+    print_result (array_1, NN);
     //printf ("inp array2\n");
     //print_result (array_2, NN);
     //printf ("inp array3\n");
@@ -87,7 +99,8 @@ int main () {
 
     printf ("start kernel function\n");
 
-    sum_array<<<Grid, Block>>> (d_array_1, d_array_2, d_array_3, n_bytes);
+    //sum_array<<<Grid, Block>>> (d_array_1, d_array_2, d_array_3, n_bytes);
+    derivertive_array<<<Grid, Block>>> (d_array_1, d_array_3, n_bytes);
 
     cudaDeviceSynchronize();
     printf ("end kernel function\n");
@@ -95,7 +108,7 @@ int main () {
     cudaMemcpy (array_3, d_array_3, n_bytes, cudaMemcpyDeviceToHost);
 
     printf ("res array3\n");
-    //print_result (array_3, NN);
+    print_result (array_3, NN);
 
     end_time = time (NULL);
     
