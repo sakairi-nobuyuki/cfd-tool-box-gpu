@@ -37,15 +37,6 @@ __global__ void sum_array (double *array_1, double *array_2, double *array_3, in
     
 }
 
-
-__global__ void ones (double *U) {
-    int i;
-    i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    U[i] = i;
-}
-
-
 __global__ void derivertive_array (double *array_in, double *array_out, int n_array) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -55,11 +46,22 @@ __global__ void derivertive_array (double *array_in, double *array_out, int n_ar
     if (i == NN - 1) array_out[i] = array_in[i - 1];
 }
 
+__global__ void solve_convective_1o_up_wind (double *U, double *U_tmp, int n_len, double C, double Co) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (0 < i && i < NN - 1) U_tmp[i] = U[i] + 0.5 * Co * (C * (U[i + 1] - U[i-1]) - fabs (C) * (U[i + 1] + 2.0 * U[i] - U[i - 1]));
+    if (0 < i && i < NN - 1) U_tmp[i] = U[i] + 0.5 * Co * (C * (U[i + 1] - U[i - 1]));
+    if (0 < i && i < NN - 1) U_tmp[i] = U[i] - 0.5 * Co * (C * (U[i + 1] - 2.0 *  U[i - 1] + U[i - 1]));
+    //if (0 < i && i < NN - 1) U_tmp[i] = U[i] - U[i - 1];
+    //if (i == 0)      U_tmp[i] = U[i + 1];
+    //if (i == NN - 1) U_tmp[i] = U[i - 1];
+}
+
 __global__ void solve_diffusion_eq (double *array_in, double *array_out, double rdx2, double dt, int n_array) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (0 < i && i < NN - 1) array_out[i] = array_out[i] = array_in[i] + 0.5 * (array_in[i + 1] - 2.0 * array_in[i] + array_in[i - 1]) * rdx2 * dt;
+    if (0 < i && i < NN - 1) array_out[i] = array_in[i] + 0.5 * (array_in[i + 1] - 2.0 * array_in[i] + array_in[i - 1]) * rdx2 * dt;
     if (i == 0) array_out[i] = array_in[i + 1];
     if (i == NN - 1) array_out[i] = array_in[i - 1];
 }
@@ -99,12 +101,13 @@ int main () {
     int i, n;
     double *U, *Utmp;
     double *gU, *gUtmp;
+    double Co, C;
     size_t n_bytes = NN * sizeof (double);
     time_t start_time, end_time;
     dim3 Grid, Block;
 
-    Grid.x = NN / 196 + 1;
-    Block.x = 196;
+    Grid.x = NN / 2 + 1;
+    Block.x = 2;
 
     printf ("start calc\n");
     start_time = time (NULL);
@@ -136,12 +139,11 @@ int main () {
 
     printf ("start kernel function\n");
     //sum_array<<<Grid, Block>>> (d_array_1, d_array_2, d_array_3, n_bytes);
-    derivertive_array<<<Grid, Block>>> (gU, gUtmp, n_bytes);
-    cudaMemcpy (U, gU, n_bytes, cudaMemcpyDeviceToHost);
-    //cudaMemcpy (Utmp, gUtmp, n_bytes, cudaMemcpyDeviceToHost);
-    printf ("derivertice test\n");
-    //print_result (Utmp, NN);
-    print_result (U, NN);
+    //derivertive_array<<<Grid, Block>>> (d_array_1, d_array_3, n_bytes);
+
+
+    Co = 0.001; 
+    C  = 0.1;
 
     for (n = 0; n < 100000; n++) {
         if (n % 1000 == 0) {
@@ -149,7 +151,8 @@ int main () {
             print_result (U, NN);
             output_result (U, NN, n);
         }
-        solve_diffusion_eq <<<Grid, Block>>> (gU, gUtmp, 1.0, 0.1, n_bytes);
+        solve_convective_1o_up_wind <<<Grid, Block>>> (gU, gUtmp, NN, C, Co);
+        //solve_diffusion_eq <<<Grid, Block>>> (gU, gUtmp, 0.1, 0.1, n_bytes);
         cudaDeviceSynchronize();
         renew_vers <<<Grid, Block>>> (gUtmp, gU);
         cudaDeviceSynchronize();
