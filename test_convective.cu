@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
-#define NN 20
+#define NN 200
 
 void output_result (double *U, int n_array, int n_iter) {
     int i;
     FILE *fp_out;
     char file_name[64];
 
-    sprintf (file_name, "%05d.dat", n_iter);
+    sprintf (file_name, "gpu_%05d.dat", n_iter);
     printf ("output result to: %s\n", file_name);
 
     if ((fp_out = fopen (file_name, "w")) == NULL) {
@@ -49,12 +50,13 @@ __global__ void derivertive_array (double *array_in, double *array_out, int n_ar
 __global__ void solve_convective_1o_up_wind (double *U, double *U_tmp, int n_len, double C, double Co) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (0 < i && i < NN - 1) U_tmp[i] = U[i] + 0.5 * Co * (C * (U[i + 1] - U[i-1]) - fabs (C) * (U[i + 1] + 2.0 * U[i] - U[i - 1]));
-    if (0 < i && i < NN - 1) U_tmp[i] = U[i] + 0.5 * Co * (C * (U[i + 1] - U[i - 1]));
-    if (0 < i && i < NN - 1) U_tmp[i] = U[i] - 0.5 * Co * (C * (U[i + 1] - 2.0 *  U[i - 1] + U[i - 1]));
+    if (0 < i && i < NN - 1) U_tmp[i] = U[i] - 0.5 * Co * (C * (U[i + 1] - U[i-1]) - fabs (C) * (U[i + 1] - 2.0 * U[i] + U[i - 1]));
+    //if (0 < i && i < NN - 1) U_tmp[i] = U[i] + 0.5 * Co * (C * (U[i + 1] - U[i - 1]));
+    //if (0 < i && i < NN - 1) U_tmp[i] = U[i] - 0.5 * Co * (C * (U[i + 1] - 2.0 *  U[i - 1] + U[i - 1]));
     //if (0 < i && i < NN - 1) U_tmp[i] = U[i] - U[i - 1];
-    //if (i == 0)      U_tmp[i] = U[i + 1];
-    //if (i == NN - 1) U_tmp[i] = U[i - 1];
+    //  boundary condition
+    if (i == 0)      U_tmp[i] = U[i + 1];
+    if (i == NN - 1) U_tmp[i] = U[i - 1];
 }
 
 __global__ void solve_diffusion_eq (double *array_in, double *array_out, double rdx2, double dt, int n_array) {
@@ -142,7 +144,7 @@ int main () {
     //derivertive_array<<<Grid, Block>>> (d_array_1, d_array_3, n_bytes);
 
 
-    Co = 0.001; 
+    Co = 0.01; 
     C  = 0.1;
 
     for (n = 0; n < 100000; n++) {

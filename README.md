@@ -29,5 +29,5 @@ They can be visualized by gnuplot.
 Calculation mesh can be changed by modifying `NN` in each files.
 
 - `test.cu`: Solves diffusion equation.
-- `test_convective`: Solves convective equation by 1st order up-wind method. Courant number can be changed by `Co`. Phase speed is `C`.
-
+- `test_convective.cu`: Solves convective equation by 1st order up-wind method. Courant number can be changed by `Co`. Phase speed is `C`.
+- `test_conventive_cpu.c`: Solves convective equation by 1st order up-wind method with CPU. Courant number can be changed by `Co`. Phase speed is `C`.
