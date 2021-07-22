@@ -1,5 +1,5 @@
 PROGRAM = main
-OBJS    = field_vars.o cuda_front_end.o main.o
+OBJS    = cuda_cfd_kernel_funcs.o field_vars.o shallow_water_eq.o main.o
 NVCC = nvcc
 CXX  = g++
 CPPFLAGS = -Wall -O3 -fPIC
