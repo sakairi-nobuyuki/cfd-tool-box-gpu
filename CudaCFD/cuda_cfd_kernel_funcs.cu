@@ -28,9 +28,11 @@ __host__ void copy_memory_device_to_host(double *U, double *gU, int n_bytes) {
 
 }
 
-//__host__ void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len) {
+void cuda_device_synchronize() {
+    cudaDeviceSynchronize();
+}
 
-//__global__ void obtain_delta_plus_device(double *gU, double *gDelta, int n_len) {
+
 __global__ void obtain_delta_plus_device(double *gU, double *gDelta, int n_len) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;

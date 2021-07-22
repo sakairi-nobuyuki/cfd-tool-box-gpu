@@ -53,6 +53,8 @@ void FieldVars1D::init_field_vars(int array_length, char var_name[64]) {
     
     printf("  allocated CPU and GPU memory\n");
 
+    testDeviceVarsAllocation();
+
     // init by substituting zeros
     initVarsWithZero();
     printf("  initialize CPU and GPU memory\n");
@@ -90,14 +92,29 @@ void FieldVars1D::initVarsWithHeavisiteFunc() {
     copy_memory_host_to_device(gArray, cArray, n_bytes);
 }
 
+void FieldVars1D::compareResultCPUandGPU(double *ResCPU, double *ResGPU, int n_len) {
+    int i;
+    for (i = 0; i < n_len - 1; i++) {
+        printf("res cpu: %lf, res gpu: %lf, diff: %lf\n", ResCPU[i], ResGPU[i], ResCPU[i] - ResGPU[i]);
+    }
+}
+
 void FieldVars1D::testDeviceVarsAllocation() {
     initVarsWithHeavisiteFunc();
     copy_memory_host_to_device(gArray, cArray, n_bytes);
 
+    cDeltaPlusTest  = (double *) malloc(n_bytes);
+    cDeltaMinusTest = (double *) malloc(n_bytes);
     obtainDeltas();
-    obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, n_len);
-    
 
+    cuda_device_synchronize();
+    obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, n_len);
+    cuda_device_synchronize();
+    copy_memory_device_to_host(cDeltaPlusTest, gDeltaPlus, n_bytes);
+    copy_memory_device_to_host(cDeltaMinusTest, gDeltaMinus, n_bytes);
+
+    compareResultCPUandGPU(cDeltaPlus, cDeltaPlusTest, n_len);
+    compareResultCPUandGPU(cDeltaMinus, cDeltaMinusTest, n_len);
 }
 
 void FieldVars1D::obtainDeltas() {

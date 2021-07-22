@@ -4,12 +4,13 @@
 class FieldVars1D {
     protected:
         double *cArray, *gArray;
-        double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus;
+        double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         int n_bytes;
 
         void initVarsWithZero();
         void initVarsWithHeavisiteFunc();
         void testDeviceVarsAllocation();
+        void compareResultCPUandGPU(double *ResCPU, double *ResGPU, int n_len);
 
         void obtainDeltas();
     public:
