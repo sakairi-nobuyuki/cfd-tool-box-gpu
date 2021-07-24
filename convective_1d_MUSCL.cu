@@ -47,6 +47,8 @@ __global__ void derivertive_array (double *array_in, double *array_out, int n_ar
     if (i == NN - 1) array_out[i] = array_in[i - 1];
 }
 
+
+
 __global__ void solve_convective_1o_up_wind (double *U, double *U_tmp, int n_len, double C, double Co) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -54,6 +56,39 @@ __global__ void solve_convective_1o_up_wind (double *U, double *U_tmp, int n_len
     //if (0 < i && i < NN - 1) U_tmp[i] = U[i] + 0.5 * Co * (C * (U[i + 1] - U[i - 1]));
     //if (0 < i && i < NN - 1) U_tmp[i] = U[i] - 0.5 * Co * (C * (U[i + 1] - 2.0 *  U[i - 1] + U[i - 1]));
     //if (0 < i && i < NN - 1) U_tmp[i] = U[i] - U[i - 1];
+    //  boundary condition
+    if (i == 0)      U_tmp[i] = U[i + 1];
+    if (i == NN - 1) U_tmp[i] = U[i - 1];
+}
+
+
+
+__device__ void obtain_delta_bar(double *U, double *DeltaBar) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 < i && i < NN - 2) {
+        DeltaBar[i] = U[i + 1] - U[i];
+    }
+
+}
+
+
+__global__ void solve_convective_roe_muscl (double *U, double *U_tmp, double *C, double *AnonDelta, double *AnonDeltaBar, double Co, int n_len) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    //  obtain DeltaBar
+    obtain_delta_bar(U, AnonDeltaBar);
+    
+
+    // obtain Delta with minmod
+
+
+    // obtain slope limiter
+
+    //if (0 < i && i < NN - 1) U_tmp[i] = U[i] - 0.5 * Co * (C * (U[i + 1] - U[i-1]) - fabs (C) * (U[i + 1] - 2.0 * U[i] + U[i - 1]));
+    
     //  boundary condition
     if (i == 0)      U_tmp[i] = U[i + 1];
     if (i == NN - 1) U_tmp[i] = U[i - 1];
@@ -101,38 +136,47 @@ void print_result (double *array, int n) {
 
 int main () {
     int i, n;
-    double *U, *Utmp;
-    double *gU, *gUtmp;
+    double *U, *Utmp, *gU, *gUtmp;
+    double *Cph, *gCph;
+    double *AnonDeltaBar, *gAnonDeltaBar, *AnonDelta, *gAnonDelta;
     double Co, C;
     size_t n_bytes = NN * sizeof (double);
     time_t start_time, end_time;
     dim3 Grid, Block;
 
-    Grid.x = NN / 2 + 1;
-    Block.x = 2;
+    Grid.x = NN / 32 + 1;
+    Block.x = 32;
 
     printf ("start calc\n");
     start_time = time (NULL);
 
     U    = (double *) malloc (n_bytes);
     Utmp = (double *) malloc (n_bytes);
-
+    Cph  = (double *) malloc (n_bytes);
+    AnonDeltaBar = (double *) malloc (n_bytes);
+ 
     printf ("memory allocation finished\n");
 
     initialize_array (U, n_bytes);
     initialize_array (Utmp, n_bytes);
+    initialize_array (Cph, n_bytes);
+    initialize_array (AnonDeltaBar, n_bytes);
 
     printf ("initialize memory\n");
     printf ("cuda memory allocation\n");
 
     cudaMalloc ((void**) &gU,    n_bytes);
     cudaMalloc ((void**) &gUtmp, n_bytes);
+    cudaMalloc ((void**) &gAnonDeltaBar, n_bytes);
+    cudaMalloc ((void**) &gAnonDelta, n_bytes);
 
     printf ("cuda memory allocation finished\n");
     printf ("cuda memory copy\n");
 
     cudaMemcpy (gU,    U,    n_bytes, cudaMemcpyHostToDevice);
     cudaMemcpy (gUtmp, Utmp, n_bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy (gAnonDeltaBar, AnonDeltaBar, n_bytes, cudaMemcpyHostToDevice);
+    
 
     printf ("cuda memory copy finished\n");
 
@@ -140,20 +184,19 @@ int main () {
     print_result (U, NN);
 
     printf ("start kernel function\n");
-    //sum_array<<<Grid, Block>>> (d_array_1, d_array_2, d_array_3, n_bytes);
-    //derivertive_array<<<Grid, Block>>> (d_array_1, d_array_3, n_bytes);
-
-
+    
     Co = 0.01; 
     C  = 0.1;
 
     for (n = 0; n < 100000; n++) {
+        /// result output
         if (n % 1000 == 0) {
             cudaMemcpy (U, gU, n_bytes, cudaMemcpyDeviceToHost);
             print_result (U, NN);
             output_result (U, NN, n);
         }
-        solve_convective_1o_up_wind <<<Grid, Block>>> (gU, gUtmp, NN, C, Co);
+
+        //solve_convective_roe_muscl <<<Grid, Block>>> (gU, gUtmp, NN, C, Co);
         //solve_diffusion_eq <<<Grid, Block>>> (gU, gUtmp, 0.1, 0.1, n_bytes);
         cudaDeviceSynchronize();
         renew_vers <<<Grid, Block>>> (gUtmp, gU);
