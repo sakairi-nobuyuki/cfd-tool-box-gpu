@@ -55,6 +55,9 @@ void FieldVars1D::testMemory() {
     allocate_cuda_memory((void **) &gArrayMemoryTest, n_bytes);
     initWithHeavisiteFunc(cArray, n_len);
     
+    //  Memory copy test 
+    //  copy memory: host --> device, device --> device; device --> host
+    //  validation by FN rate and correlation factor. I'm not sure if this validation is suitable or not, but I believe it works well.
     printf("    Simple memory copy test\n");
     copy_memory_host_to_device(gArray, cArray, n_bytes);
     copy_memory_device_to_device(gArrayMemoryTest, gArray, n_bytes);
@@ -65,15 +68,51 @@ void FieldVars1D::testMemory() {
     printf ("      %d data was different out of %d\n", n_failure, n_len);
     Cor = testObtainCorrelFactor(cArray, cArrayMemoryTest, n_len);
     printf ("      Correlation factor between 2 memories: %lf\n", Cor);
+    copy_memory_device_to_host(cArrayMemoryTest, gArray, n_bytes);
+    if (debug_mode == 0) printTwoVars(cArray, cArrayMemoryTest, n_len);
+
+    //  Test of derivertive calculation
+    //  calculating up-wind and down-wind derivertive by GPU and CPU
+    printf("    Derivertive difference validation between CPU and GPU\n");
+    cDeltaPlusTest  = (double *) malloc(n_bytes);  //  temporally memory allocation for test
+    cDeltaMinusTest = (double *) malloc(n_bytes);  //  temporally memory allocation for test
+    cuda_device_synchronize();
+    obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, n_len);
+    cuda_device_synchronize();
+    copy_memory_device_to_host(cDeltaPlusTest, gDeltaPlus, n_bytes);
+    copy_memory_device_to_host(cDeltaMinusTest, gDeltaMinus, n_bytes);
+
+    obtainDeltas();
+    
+    printf ("    validation of contents of 2 memory areas of Delta+:\n");
+    n_failure = compareArrays(cDeltaPlus, cDeltaPlusTest, n_len);
+    printf ("      %d data was different out of %d\n", n_failure, n_len);
+    Cor = testObtainCorrelFactor(cDeltaPlus, cDeltaPlusTest, n_len);
+    printf ("      Correlation factor between 2 memories: %lf\n", Cor);
+    if (debug_mode == 0) printTwoVars(cDeltaPlus, cDeltaPlusTest, n_len);
+    printf ("    validation of contents of 2 memory areas of Delta-:\n");
+    n_failure = compareArrays(cDeltaMinus, cDeltaMinusTest, n_len);
+    printf ("      %d data was different out of %d\n", n_failure, n_len);
+    Cor = testObtainCorrelFactor(cDeltaMinus, cDeltaMinusTest, n_len);
+    printf ("      Correlation factor between 2 memories: %lf\n", Cor);
+    if (debug_mode == 0) printTwoVars(cDeltaMinus, cDeltaMinusTest, n_len);
+    printf ("    original values before derivertive\n");
+    
+    free(cDeltaPlusTest);
+    free(cDeltaMinusTest);
+    free(cArrayMemoryTest);
+    free_cuda_memory(gArrayMemoryTest);
+    printf("    test of %s is completed\n\n", name);
+
+}
 
 
+void FieldVars1D::printTwoVars(double *U, double *V, int n_len) {
+    int i;
 
-//cuda_device_synchronize();
-    //obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, n_len);
-    //cuda_device_synchronize();
-    //copy_memory_device_to_host(cDeltaPlusTest, gDeltaPlus, n_bytes);
-    //copy_memory_device_to_host(cDeltaMinusTest, gDeltaMinus, n_bytes);
-
+    printf("  confirming two vars:\n");
+    for (i = 0; i < n_len; i++)  printf("    U: %lf, V: %lf\n", U[i], V[i]);
+    printf("\n");
 
 }
 
@@ -88,14 +127,20 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64]) {
     printf("  length of the array: %d\n", n_len);
     printf("  size of the array:   %d\n", n_bytes);
     
+    // setting debug mode on/off
+    debug_mode = -1; 
+
     // allocate memories
     printf("  In field_vars, allocating GPU memory\n");
-    printf("    before allocate_cuda_memory address of gArray: %p\n", gArray);
     //allocate_cuda_memory(gArray, n_bytes);
-    allocate_cuda_memory((void **) &gArray, n_bytes);
-    printf("    after allocate_cuda_memory address of gArray:  %p\n", gArray);
-    cArray = (double *) malloc(n_bytes);
-    
+    allocate_cuda_memory((void **) &gArray,      n_bytes);
+    allocate_cuda_memory((void **) &gDeltaPlus,  n_bytes);
+    allocate_cuda_memory((void **) &gDeltaMinus, n_bytes);
+    cArray =      (double *) malloc(n_bytes);
+    cDeltaPlus  = (double *) malloc(n_bytes);
+    cDeltaMinus = (double *) malloc(n_bytes);
+
+
     // memory test
     testMemory();
 
@@ -151,19 +196,7 @@ int FieldVars1D::compareArrays(double *U, double *V, int n_len) {
 
     return n_failure;
 }
-    //cDeltaPlusTest  = (double *) malloc(n_bytes);
-    //cDeltaMinusTest = (double *) malloc(n_bytes);
-    //obtainDeltas();
-
-    //cuda_device_synchronize();
-    //obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, n_len);
-    //cuda_device_synchronize();
-    //copy_memory_device_to_host(cDeltaPlusTest, gDeltaPlus, n_bytes);
-    //copy_memory_device_to_host(cDeltaMinusTest, gDeltaMinus, n_bytes);
-
-    //compareResultCPUandGPU(cDeltaPlus, cDeltaPlusTest, n_len);
-    //compareResultCPUandGPU(cDeltaMinus, cDeltaMinusTest, n_len);
-
+    
 void FieldVars1D::obtainDeltas() {
     int i;
 

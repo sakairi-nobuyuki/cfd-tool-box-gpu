@@ -6,6 +6,7 @@ class FieldVars1D {
         double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         int n_bytes;
+        bool debug_mode;
 
         void initVarsWithZero();
         void initVarsWithHeavisiteFunc();
@@ -14,6 +15,7 @@ class FieldVars1D {
         void testMemory();
         double testObtainCorrelFactor(double *U, double *V, int n_len);
         int compareArrays(double *ResCPU, double *ResGPU, int n_len);
+        void printTwoVars(double *U, double *V, int n_len);
 
         void obtainDeltas();
     public:
