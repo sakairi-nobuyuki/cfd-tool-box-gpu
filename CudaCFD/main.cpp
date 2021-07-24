@@ -12,7 +12,7 @@ int main() {
     ShallowWaterEq SWE_test;
 
     //SWE_test.init(100);
-    SWE_test.init(100, "test");
+    SWE_test.init(10, "test");
 
     printf("%s %d\n", SWE_test.HU.name, SWE_test.HU.n_len);
     

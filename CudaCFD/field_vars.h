@@ -3,14 +3,17 @@
 
 class FieldVars1D {
     protected:
-        double *cArray, *gArray;
+        double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         int n_bytes;
 
         void initVarsWithZero();
         void initVarsWithHeavisiteFunc();
-        void testDeviceVarsAllocation();
-        void compareResultCPUandGPU(double *ResCPU, double *ResGPU, int n_len);
+        void initWithHeavisiteFunc(double *Array, int n_len);
+
+        void testMemory();
+        double testObtainCorrelFactor(double *U, double *V, int n_len);
+        int compareArrays(double *ResCPU, double *ResGPU, int n_len);
 
         void obtainDeltas();
     public:
@@ -20,7 +23,7 @@ class FieldVars1D {
         FieldVars1D(int array_length, char var_name[64]);
         ~FieldVars1D();
         
-        void init_field_vars(int array_length, char var_name[64]);
+        void initFieldVars(int array_length, char var_name[64]);
         void output(double time);
         
 };

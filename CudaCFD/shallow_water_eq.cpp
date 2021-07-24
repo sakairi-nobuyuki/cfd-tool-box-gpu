@@ -29,8 +29,8 @@ void ShallowWaterEq::init(int n_len_inp, char name_inp[64]) {
     cout << "initializing \"" << name << "\" of shallow water eq class" << endl;
     cout << "  length: " << n_len << endl;
     
-    U.init_field_vars(n_len, "U");
-    HU.init_field_vars(n_len, "HU");
+    U.initFieldVars(n_len, "U");
+    //HU.init_field_vars(n_len, "HU");
 
 }
 
