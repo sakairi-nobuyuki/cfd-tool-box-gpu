@@ -74,16 +74,18 @@ __global__ void obtain_delta_plus_device(double *gU, double *gDelta, int n_len) 
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (0 < i && i < n_len - 2) gDelta[i] = gU[i + 1] - gU[i];
-    if (i == n_len - 1) gDelta[i] = gDelta[i-1];
+    if (0 < i && i < n_len) gDelta[i] = gU[i + 1] - gU[i];
+    if (i == 0)             gDelta[i] = gU[i + 1] - gU[i];
+    if (i == n_len - 1)     gDelta[i] = gDelta[i - 1];
 }
 
 __global__ void obtain_delta_minus_device(double *gU, double *gDelta, int n_len) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (1 < i && i < n_len - 1) gDelta[i] = gU[i] - gU[i - 1];
-    if (i == n_len - 1) gDelta[0] = gDelta[1];
+    if (0 < i && i < n_len) gDelta[i] = gU[i] - gU[i - 1];
+    if (i == 0)             gDelta[i] = gDelta[i + 1];
+    if (i == n_len - 1)     gDelta[i] = gU[i] - gU[i - 1];
 }
 
 void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len) {
