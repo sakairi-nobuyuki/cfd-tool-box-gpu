@@ -1,11 +1,15 @@
 #ifndef __FIELD_VARS_H__
 #define __FIELD_VARS_H__
 
+#include "cuda_memory_config.h"
+
 class FieldVars1D {
     protected:
         double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         int n_bytes;
+        BlockDim *dimBlock;
+        GridDim *dimGrid;
         bool debug_mode;
 
         void initVarsWithZero();
@@ -25,7 +29,8 @@ class FieldVars1D {
         FieldVars1D();
         ~FieldVars1D();
         
-        void initFieldVars(int array_length, char var_name[64]);
+        void initFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp);
+        //void initFieldVars(int array_length, char var_name[64]);
         void output(double time);
         
 };
