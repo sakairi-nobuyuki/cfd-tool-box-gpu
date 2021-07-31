@@ -15,11 +15,11 @@ GridDim::GridDim() {
 }
 
 void setCudaGridBlockConfig1D(int n_len, GridDim *dimGrid, BlockDim *dimBlock) {
-    dimBlock->x = 2;
+    dimBlock->x = 10;
     dimBlock->y = 1;
     dimBlock->z = 1;
-    dimGrid->x = n_len / dimBlock->x;
-    dimGrid->y = 1;
+    dimGrid->x = 1;
+    dimGrid->y = n_len / dimBlock->x;
 }
 
 

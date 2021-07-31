@@ -88,9 +88,12 @@ __global__ void obtain_delta_minus_device(double *gU, double *gDelta, int n_len)
     if (i == n_len - 1)     gDelta[i] = gU[i] - gU[i - 1];
 }
 
-void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len) {
-    obtain_delta_plus_device<<<1, 10>>>(gU, gDeltaPlus, n_len);
-    obtain_delta_minus_device<<<1, 10>>>(gU, gDeltaMinus, n_len);
+//void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len) {
+void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    obtain_delta_plus_device<<<grid, block>>>(gU, gDeltaPlus, n_len);
+    obtain_delta_minus_device<<<grid, block>>>(gU, gDeltaMinus, n_len);
+
 }
 
 

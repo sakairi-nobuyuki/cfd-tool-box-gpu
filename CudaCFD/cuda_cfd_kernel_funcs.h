@@ -1,4 +1,4 @@
-
+#include "cuda_memory_config.h"
 
 
 //void allocate_cuda_memory(double *U, int n_bytes);
@@ -8,7 +8,8 @@ void copy_memory_device_to_host(double *U, double *gU, int n_bytes);
 void copy_memory_device_to_device(double *gV, double *gU, int n_bytes);
 void cuda_device_synchronize();
 
-void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len);
+//void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len);
+void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
 
 
 void free_cuda_memory(double *gU);

@@ -27,7 +27,8 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     printf("  configuration of CUDA memory: dim3 grid(%d, %d), block(%d, %d, %d)\n", dimGrid->x, dimGrid->y, dimBlock->x, dimBlock->y, dimBlock->z);
 
     // setting debug mode on/off
-    debug_mode = -1; 
+    debug_mode = 0; 
+    //debug_mode = -1; 
 
     // allocate memories
     printf("  In field_vars, allocating GPU memory\n");
@@ -188,14 +189,11 @@ void FieldVars1D::testObtainDeltasAbstract(void (*initArray) (double *cArray, in
     //initWithHeavisiteFunc(cArray, n_len);
     //(this->*initArray)(cArray, n_len);
 
-    //debug_mode = 0;
-    debug_mode = -1;
-
     initArray(cArray, n_len);
     copy_memory_host_to_device(gArray, cArray, n_bytes);
 
     cuda_device_synchronize();
-    obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, n_len);
+    obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, dimGrid, dimBlock, n_len);
     cuda_device_synchronize();
     copy_memory_device_to_host(cDeltaPlusTest, gDeltaPlus, n_bytes);
     copy_memory_device_to_host(cDeltaMinusTest, gDeltaMinus, n_bytes);

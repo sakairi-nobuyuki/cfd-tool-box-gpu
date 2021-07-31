@@ -1,5 +1,5 @@
 #ifndef __SHALLOW_WATER_EQ_H__
-#define __SHALLOW_WATER_EQ_H__
+#definoe __SHALLOW_WATER_EQ_H__
 
 #include <string>
 #include "field_vars.h"
