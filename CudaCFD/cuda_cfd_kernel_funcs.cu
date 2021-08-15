@@ -70,7 +70,7 @@ void cuda_device_synchronize() {
 }
 
 
-__global__ void obtain_delta_plus_device(double *gU, double *gDelta, int n_len) {
+__global__ void obtain_delta_plus_device(double *gDelta, double *gU, int n_len) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -79,7 +79,7 @@ __global__ void obtain_delta_plus_device(double *gU, double *gDelta, int n_len) 
     if (i == n_len - 1)     gDelta[i] = gDelta[i - 1];
 }
 
-__global__ void obtain_delta_minus_device(double *gU, double *gDelta, int n_len) {
+__global__ void obtain_delta_minus_device(double *gDelta, double *gU, int n_len) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -89,15 +89,15 @@ __global__ void obtain_delta_minus_device(double *gU, double *gDelta, int n_len)
 }
 
 //void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len) {
-void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+void obtain_deltas_device(double *gDeltaPlus, double *gDeltaMinus, double *gU, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
     dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
-    obtain_delta_plus_device<<<grid, block>>>(gU, gDeltaPlus, n_len);
-    obtain_delta_minus_device<<<grid, block>>>(gU, gDeltaMinus, n_len);
+    obtain_delta_plus_device<<<grid, block>>>(gDeltaPlus, gU, n_len);
+    obtain_delta_minus_device<<<grid, block>>>(gDeltaMinus, gU, n_len);
 
 }
 
 
-__global__ void obtain_minmod(double *gDeltaPlus, double *gDeltaMinus, double *gBarDeltaPlus, double *gBarDeltaMinus, double b, int n_len) {
+__global__ void obtain_minmod(double *gBarDeltaPlus, double *gBarDeltaMinus, double *gDeltaPlus, double *gDeltaMinus, double b, int n_len) {
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -114,10 +114,16 @@ __global__ void obtain_minmod(double *gDeltaPlus, double *gDeltaMinus, double *g
 
 }
 
-void obtain_minmod(double *gDeltaPlus, double *gDeltaMinus, double *gBarDeltaPlus, double *gBarDeltaMinus, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+void obtain_minmod_device(double *gBarDeltaPlus, double *gBarDeltaMinus, double *gDeltaPlus, double *gDeltaMinus, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
     dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
-    obtain_minmod<<<grid, block>>>(gDeltaPlus, gDeltaMinus, gBarDeltaPlus, gBarDeltaMinus, b, n_len);
+    obtain_minmod<<<grid, block>>>(gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, b, n_len);
 
+}
+
+
+__global__ void obtain_slope(double *gSlope, double *gDeltaPlus, double *gDeltaMinus, double epsilon, int n_len) {
+    
+    
 }
 
 

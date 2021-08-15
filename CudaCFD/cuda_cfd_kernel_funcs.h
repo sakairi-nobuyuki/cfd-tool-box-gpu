@@ -9,10 +9,10 @@ void copy_memory_device_to_device(double *gV, double *gU, int n_bytes);
 void cuda_device_synchronize();
 
 //void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len);
-void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
+void obtain_deltas_device(double *gDeltaPlus, double *gDeltaMinus, double *gU, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
 
 // MUSCL limiters
-void obtain_minmod(double *gDeltaPlus, double *gDeltaMinus, double *gBarDeltaPlus, double *gBarDeltaMinus, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
+void obtain_minmod_device(double *gBarDeltaPlus, double *gBarDeltaMinus, double *gDeltaPlus, double *gDeltaMinus, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
 
 
 void free_cuda_memory(double *gU);

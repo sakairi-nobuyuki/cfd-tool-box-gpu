@@ -28,6 +28,7 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
 
     // setting CFD something
     b = (3.0 - 1.0 / 3.0) / (1.0 - 1.0 / 3.0);
+    epsilon = 0.01;
 
     // setting debug mode on/off
     debug_mode = 0; 
@@ -259,7 +260,7 @@ int FieldVars1D::testObtainDeltasMinmodAbstract(void (*initArray) (double *cArra
     copy_memory_host_to_device(gArray, cArray, n_bytes);
 
     cuda_device_synchronize();
-    obtain_deltas_device(gArray, gDeltaPlus, gDeltaMinus, dimGrid, dimBlock, n_len);
+    obtain_deltas_device(gDeltaPlus, gDeltaMinus, gArray, dimGrid, dimBlock, n_len);
     cuda_device_synchronize();
     copy_memory_device_to_host(cDeltaPlusTest, gDeltaPlus, n_bytes);
     copy_memory_device_to_host(cDeltaMinusTest, gDeltaMinus, n_bytes);
@@ -270,7 +271,7 @@ int FieldVars1D::testObtainDeltasMinmodAbstract(void (*initArray) (double *cArra
     n_failure += testDeltasMinmodValidation(cDeltaMinus, cDeltaMinusTest, n_len, "delta-", test_name);
 
     // Testing minmod
-    obtain_minmod(gDeltaPlus, gDeltaMinus, gBarDeltaPlus, gBarDeltaMinus, b, dimGrid, dimBlock, n_len);
+    obtain_minmod_device(gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, b, dimGrid, dimBlock, n_len);
     cuda_device_synchronize();
     obtainMinmod();
     cuda_device_synchronize();
