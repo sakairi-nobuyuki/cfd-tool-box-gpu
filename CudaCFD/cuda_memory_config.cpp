@@ -18,8 +18,8 @@ void setCudaGridBlockConfig1D(int n_len, GridDim *dimGrid, BlockDim *dimBlock) {
     dimBlock->x = 10;
     dimBlock->y = 1;
     dimBlock->z = 1;
-    dimGrid->x = 1;
-    dimGrid->y = n_len / dimBlock->x;
+    dimGrid->x = n_len / dimBlock->x;
+    dimGrid->y = 1;
 }
 
 

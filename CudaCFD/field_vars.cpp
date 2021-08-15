@@ -36,9 +36,13 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     allocate_cuda_memory((void **) &gArray,      n_bytes);
     allocate_cuda_memory((void **) &gDeltaPlus,  n_bytes);
     allocate_cuda_memory((void **) &gDeltaMinus, n_bytes);
+    allocate_cuda_memory((void **) &gBarDeltaPlus,  n_bytes);
+    allocate_cuda_memory((void **) &gBarDeltaMinus, n_bytes);
     cArray =      (double *) malloc(n_bytes);
     cDeltaPlus  = (double *) malloc(n_bytes);
     cDeltaMinus = (double *) malloc(n_bytes);
+    cBarDeltaPlus  = (double *) malloc(n_bytes);
+    cBarDeltaMinus = (double *) malloc(n_bytes);
 
     // memory test
     testMemory();
@@ -133,6 +137,33 @@ double FieldVars1D::testObtainCorrelFactor(double *U, double *V, int n_len) {
 
 }
 
+int FieldVars1D::testMemoryCopy(double *cArray, double *gArray, double *gArrayMemoryTest, double *cArrayMemoryTest, char var_name[64]) {
+    int n_failures;
+    double Cor;
+
+    printf("  Testing %s memory copy:\n", var_name);
+    copy_memory_host_to_device(gArray, cArray, n_bytes);
+    copy_memory_device_to_device(gArrayMemoryTest, gArray, n_bytes);
+    copy_memory_device_to_host(cArrayMemoryTest, gArrayMemoryTest, n_bytes);
+
+    printf ("    validation of contents of 2 memory areas:\n");
+    n_failures = compareArrays(cArray, cArrayMemoryTest, n_len);
+    printf ("      %d data was different out of %d\n", n_failures, n_len);
+    Cor = testObtainCorrelFactor(cArray, cArrayMemoryTest, n_len);
+    printf ("      Correlation factor between 2 memories: %lf\n", Cor);
+    copy_memory_device_to_host(cArrayMemoryTest, gArray, n_bytes);
+    if (debug_mode == 0) printTwoVars(cArray, cArrayMemoryTest, n_len);
+
+    if (n_failures / n_len > 0.5 || Cor < 0.5) {
+        printf("    Too much inconsisntency at memory copy test of %s\n", var_name);
+        return -1;
+    } else {
+        printf("    Memory test of %s succeeded\n\n", var_name);
+        return 0;
+    }
+    
+}
+
 void FieldVars1D::testMemory() {
     int n_failure;
     double Cor;
@@ -147,17 +178,12 @@ void FieldVars1D::testMemory() {
     //  copy memory: host --> device, device --> device; device --> host
     //  validation by FN rate and correlation factor. I'm not sure if this validation is suitable or not, but I believe it works well.
     printf("    Simple memory copy test\n");
-    copy_memory_host_to_device(gArray, cArray, n_bytes);
-    copy_memory_device_to_device(gArrayMemoryTest, gArray, n_bytes);
-    copy_memory_device_to_host(cArrayMemoryTest, gArrayMemoryTest, n_bytes);
+    testMemoryCopy(cArray, gArray, gArrayMemoryTest, cArrayMemoryTest, "gArray");
+    testMemoryCopy(cArray, gDeltaPlus,  gArrayMemoryTest, cArrayMemoryTest, "gDeltaPlus");
+    testMemoryCopy(cArray, gDeltaMinus, gArrayMemoryTest, cArrayMemoryTest, "gDeltaMinus");
+    testMemoryCopy(cArray, gBarDeltaPlus,  gArrayMemoryTest, cArrayMemoryTest, "gDeltaPlusBar");
+    testMemoryCopy(cArray, gBarDeltaMinus, gArrayMemoryTest, cArrayMemoryTest, "gDeltaMinusBar");
 
-    printf ("    validation of contents of 2 memory areas:\n");
-    n_failure = compareArrays(cArray, cArrayMemoryTest, n_len);
-    printf ("      %d data was different out of %d\n", n_failure, n_len);
-    Cor = testObtainCorrelFactor(cArray, cArrayMemoryTest, n_len);
-    printf ("      Correlation factor between 2 memories: %lf\n", Cor);
-    copy_memory_device_to_host(cArrayMemoryTest, gArray, n_bytes);
-    if (debug_mode == 0) printTwoVars(cArray, cArrayMemoryTest, n_len);
 
     //  Test of derivertive calculation
     //  calculating up-wind and down-wind derivertive by GPU and CPU
@@ -166,6 +192,7 @@ void FieldVars1D::testMemory() {
     cDeltaMinusTest = (double *) malloc(n_bytes);  //  temporally memory allocation for test
 
     //  Tesing obtaining Delta+ and Delta- with a variation of initial conditions
+    printf("    Testing delta plus and delta minus for minmod:\n");
     testObtainDeltasAbstract(initArrayWithHeavisiteFunc, gArray, gDeltaPlus, gDeltaMinus, 
         cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "Heavisite step function");
     testObtainDeltasAbstract(initArrayWithRampFunc, gArray, gDeltaPlus, gDeltaMinus, 

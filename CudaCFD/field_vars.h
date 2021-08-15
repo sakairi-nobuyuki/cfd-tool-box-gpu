@@ -7,6 +7,7 @@ class FieldVars1D {
     protected:
         double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
+        double *cBarDeltaPlus, *cBarDeltaMinus, *gBarDeltaPlus, *gBarDeltaMinus, *cBarDeltaPlusTest, *cBarDeltaMinusTest;
         int n_bytes;
         BlockDim *dimBlock;
         GridDim *dimGrid;
@@ -18,11 +19,13 @@ class FieldVars1D {
         void testObtainDeltasAbstract(void (*initArray) (double *cArray, int n_len), double *gArray, double *gDeltaPlus, double *gDeltaMinus, 
             double *cArray, double *cDeltaPlusTest, double *cDeltaMinusTest, int n_len, int n_bytes, char test_name[64]);
         double testObtainCorrelFactor(double *U, double *V, int n_len);
+        int testMemoryCopy(double *cArray, double *gArray, double *gArrayMemoryTest, double *cArrayMemoryTest, char var_name[64]);
         
         int compareArrays(double *ResCPU, double *ResGPU, int n_len);
         void printTwoVars(double *U, double *V, int n_len);
 
         void obtainDeltas();
+        void obtainMinmod();
     public:
         int n_len;
         char name[64];
