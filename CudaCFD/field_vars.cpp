@@ -26,6 +26,9 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     dimGrid  = dimGridInp;
     printf("  configuration of CUDA memory: dim3 grid(%d, %d), block(%d, %d, %d)\n", dimGrid->x, dimGrid->y, dimBlock->x, dimBlock->y, dimBlock->z);
 
+    // setting CFD something
+    b = (3.0 - 1.0 / 3.0) / (1.0 - 1.0 / 3.0);
+
     // setting debug mode on/off
     debug_mode = 0; 
     //debug_mode = -1; 
@@ -86,6 +89,24 @@ void FieldVars1D::obtainDeltas() {
 }
 
 
+void FieldVars1D::obtainMinmod() {
+    int i;
+
+    for (i = 0; i < n_len; i++) {
+        cBarDeltaPlus[i] 
+            = copysignf(1.0, cDeltaPlus[i]) 
+            * fmaxf(0.0, fminf(fabs(cDeltaPlus[i]), copysignf(1.0, cDeltaPlus[i]) * b * cDeltaMinus[i]));
+    }
+
+    for (i = 0; i < n_len - 1; i++) {
+        cBarDeltaMinus[i] 
+            = copysignf(1.0, cDeltaMinus[i]) 
+            * fmaxf(0.0, fminf(fabs(cDeltaMinus[i]), copysignf(1.0, cDeltaMinus[i]) * b * cDeltaPlus[i]));
+    }
+
+}
+
+
 void initArrayWithHeavisiteFunc(double *Array, int n_len) {
     //  initialize the Array by Heavisite step function
     int i;
@@ -133,7 +154,12 @@ double FieldVars1D::testObtainCorrelFactor(double *U, double *V, int n_len) {
     for (i = 0; i < n_len; i++) VV += pow(V[i] - Vave, 2);
     for (i = 0; i < n_len; i++) UV += (V[i] - Vave) * (U[i] - Uave);
 
-    return UV / sqrt(UU * VV);
+    if (UU == 0.0 || VV == 0.0) {
+        if (UV == 0.0) return 1.0;
+        else return 0.0;
+    } else {
+        return UV / sqrt(UU * VV);
+    }
 
 }
 
@@ -164,9 +190,22 @@ int FieldVars1D::testMemoryCopy(double *cArray, double *gArray, double *gArrayMe
     
 }
 
+int FieldVars1D::testDerivertive() {
+    int n_failure = 0;
+    printf("    Testing delta plus and delta minus for minmod:\n");
+    n_failure += testObtainDeltasMinmodAbstract(initArrayWithHeavisiteFunc, gArray, gDeltaPlus, gDeltaMinus, 
+        cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "Heavisite step function");
+    n_failure += testObtainDeltasMinmodAbstract(initArrayWithRampFunc, gArray, gDeltaPlus, gDeltaMinus, 
+        cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "Ramp function");        
+    n_failure += testObtainDeltasMinmodAbstract(initArrayWithParaboraicFunc, gArray, gDeltaPlus, gDeltaMinus, 
+        cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "paraboraic function");
+
+    return n_failure;
+}
+
 void FieldVars1D::testMemory() {
-    int n_failure;
-    double Cor;
+    int n_failure = 0;
+    //double Cor;
 
     printf("  Memory test of %s:\n", name);
     printf("    in memory test, configuration of CUDA memory: dim3 grid(%d, %d), block(%d, %d, %d)\n", dimGrid->x, dimGrid->y, dimBlock->x, dimBlock->y, dimBlock->z);
@@ -178,11 +217,11 @@ void FieldVars1D::testMemory() {
     //  copy memory: host --> device, device --> device; device --> host
     //  validation by FN rate and correlation factor. I'm not sure if this validation is suitable or not, but I believe it works well.
     printf("    Simple memory copy test\n");
-    testMemoryCopy(cArray, gArray, gArrayMemoryTest, cArrayMemoryTest, "gArray");
-    testMemoryCopy(cArray, gDeltaPlus,  gArrayMemoryTest, cArrayMemoryTest, "gDeltaPlus");
-    testMemoryCopy(cArray, gDeltaMinus, gArrayMemoryTest, cArrayMemoryTest, "gDeltaMinus");
-    testMemoryCopy(cArray, gBarDeltaPlus,  gArrayMemoryTest, cArrayMemoryTest, "gDeltaPlusBar");
-    testMemoryCopy(cArray, gBarDeltaMinus, gArrayMemoryTest, cArrayMemoryTest, "gDeltaMinusBar");
+    n_failure += testMemoryCopy(cArray, gArray, gArrayMemoryTest, cArrayMemoryTest, "gArray");
+    n_failure += testMemoryCopy(cArray, gDeltaPlus,  gArrayMemoryTest, cArrayMemoryTest, "gDeltaPlus");
+    n_failure += testMemoryCopy(cArray, gDeltaMinus, gArrayMemoryTest, cArrayMemoryTest, "gDeltaMinus");
+    n_failure += testMemoryCopy(cArray, gBarDeltaPlus,  gArrayMemoryTest, cArrayMemoryTest, "gDeltaPlusBar");
+    n_failure += testMemoryCopy(cArray, gBarDeltaMinus, gArrayMemoryTest, cArrayMemoryTest, "gDeltaMinusBar");
 
 
     //  Test of derivertive calculation
@@ -193,26 +232,26 @@ void FieldVars1D::testMemory() {
 
     //  Tesing obtaining Delta+ and Delta- with a variation of initial conditions
     printf("    Testing delta plus and delta minus for minmod:\n");
-    testObtainDeltasAbstract(initArrayWithHeavisiteFunc, gArray, gDeltaPlus, gDeltaMinus, 
-        cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "Heavisite step function");
-    testObtainDeltasAbstract(initArrayWithRampFunc, gArray, gDeltaPlus, gDeltaMinus, 
-        cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "Ramp function");        
-    testObtainDeltasAbstract(initArrayWithParaboraicFunc, gArray, gDeltaPlus, gDeltaMinus, 
-        cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "paraboraic function");
+    n_failure += testDerivertive();
     
     free(cDeltaPlusTest);
     free(cDeltaMinusTest);
     free(cArrayMemoryTest);
     free_cuda_memory(gArrayMemoryTest);
-    printf("    test of %s is completed\n\n", name);
+    printf("    test of %s is completed\n", name);
+    printf("    number of failures in %s test was %d\n", name, n_failure);
+    if (n_failure > 1) {
+        printf("TOO MUCH FAILURES AT MEMORY AND CALC TEST. GOING TO ABORT. CONFIRM CUDA SOMETHING OR CODE\n");
+        exit(1);
+    }
 
 }
 
 //void FieldVars1D::testObtainDeltasAbstract(void (FieldVars1D::*initArray) (double *cArray, int n_len), double *gArray, double *gDeltaPlus, double *gDeltaMinus, 
-void FieldVars1D::testObtainDeltasAbstract(void (*initArray) (double *cArray, int n_len), double *gArray, double *gDeltaPlus, double *gDeltaMinus, 
+int FieldVars1D::testObtainDeltasMinmodAbstract(void (*initArray) (double *cArray, int n_len), double *gArray, double *gDeltaPlus, double *gDeltaMinus, 
         double *cArray, double *cDeltaPlusTest, double *cDeltaMinusTest, int n_len, int n_bytes, char test_name[64]) {
-    double Cor;
-    int n_failure;
+    
+    int n_failure = 0;
     //initWithHeavisiteFunc(cArray, n_len);
     //(this->*initArray)(cArray, n_len);
 
@@ -227,26 +266,45 @@ void FieldVars1D::testObtainDeltasAbstract(void (*initArray) (double *cArray, in
 
     obtainDeltas();
 
-    printf ("  validation of calculation of Deltas+ with initial condition of %s:\n", test_name);
-    printf ("    validation of contents of 2 memory areas of Delta+:\n");
-    n_failure = compareArrays(cDeltaPlus, cDeltaPlusTest, n_len);
-    printf ("      n_failures: %d / %d\n", n_failure, n_len);
-    Cor = testObtainCorrelFactor(cDeltaPlus, cDeltaPlusTest, n_len);
-    printf ("      Correlation factor: %lf\n", Cor);
-    if (debug_mode == 0) printTwoVars(cDeltaPlus, cDeltaPlusTest, n_len);
-    printf ("    validation of contents of 2 memory areas of Delta-:\n");
-    n_failure = compareArrays(cDeltaMinus, cDeltaMinusTest, n_len);
-    printf ("      n_failures: %d / %d\n", n_failure, n_len);
-    Cor = testObtainCorrelFactor(cDeltaMinus, cDeltaMinusTest, n_len);
-    printf ("      Correlation factor: %lf\n", Cor);
+    n_failure += testDeltasMinmodValidation(cDeltaPlus,  cDeltaPlusTest,  n_len, "delta+", test_name);
+    n_failure += testDeltasMinmodValidation(cDeltaMinus, cDeltaMinusTest, n_len, "delta-", test_name);
+
+    // Testing minmod
+    obtain_minmod(gDeltaPlus, gDeltaMinus, gBarDeltaPlus, gBarDeltaMinus, b, dimGrid, dimBlock, n_len);
+    cuda_device_synchronize();
+    obtainMinmod();
+    cuda_device_synchronize();
+    copy_memory_device_to_host(cDeltaPlusTest, gBarDeltaPlus, n_bytes);
+    copy_memory_device_to_host(cDeltaMinusTest, gBarDeltaMinus, n_bytes);
+
+    n_failure += testDeltasMinmodValidation(cBarDeltaPlus,  cDeltaPlusTest,  n_len, "minmod+", test_name);
+    n_failure += testDeltasMinmodValidation(cBarDeltaMinus, cDeltaMinusTest, n_len, "minmod-", test_name);
     
-    if (debug_mode == 0) printTwoVars(cDeltaMinus, cDeltaMinusTest, n_len);
-    printf ("    original values before derivertive\n");
- 
-
-
+    return n_failure;
 }
 
+int FieldVars1D::testDeltasMinmodValidation(double *cArray1, double *cArray2, int n_len, char var_type[64], char test_name[64]) {
+    int n_failure;
+    double Cor;
+
+    printf ("  validation of calculation of %s with initial condition of %s:\n", var_type, test_name);
+    printf ("    validation of contents of 2 memory areas of %s:\n", var_type);
+    n_failure = compareArrays(cArray1, cArray2, n_len);
+    printf ("      n_failures: %d / %d\n", n_failure, n_len);
+    Cor = testObtainCorrelFactor(cArray1, cArray2, n_len);
+    printf ("      Correlation factor: %lf\n", Cor);
+    if (debug_mode == 0) printTwoVars(cArray1, cArray2, n_len);
+    printf ("    original values before derivertive\n");
+
+    if (n_failure / n_len > 0.5 || Cor < 0.5) {
+        printf("    Too much inconsisntency at test of %s at %s\n", var_type, test_name);
+        return -1;
+    } else {
+        printf("    Memory test of %s at %s succeeded\n\n", var_type, test_name);
+        return 0;
+    }
+
+}
 
 void FieldVars1D::printTwoVars(double *U, double *V, int n_len) {
     //  print the elements of U and V to std output

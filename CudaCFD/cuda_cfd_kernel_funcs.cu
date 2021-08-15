@@ -97,6 +97,29 @@ void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, G
 }
 
 
+__global__ void obtain_minmod(double *gDeltaPlus, double *gDeltaMinus, double *gBarDeltaPlus, double *gBarDeltaMinus, double b, int n_len) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 <= i && i < n_len) 
+        gBarDeltaPlus[i] 
+            = copysignf(1.0, gDeltaPlus[i]) 
+            * fmaxf(0.0, fminf(fabs(gDeltaPlus[i]), copysignf(1.0, gDeltaPlus[i]) * b * gDeltaMinus[i]));
+    if (0 <= i && i < n_len) 
+        gBarDeltaMinus[i] 
+            = copysignf(1.0, gDeltaMinus[i]) 
+            * fmaxf(0.0, fminf(fabs(gDeltaMinus[i]), copysignf(1.0, gDeltaMinus[i]) * b * gDeltaPlus[i]));
+
+            
+
+}
+
+void obtain_minmod(double *gDeltaPlus, double *gDeltaMinus, double *gBarDeltaPlus, double *gBarDeltaMinus, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    obtain_minmod<<<grid, block>>>(gDeltaPlus, gDeltaMinus, gBarDeltaPlus, gBarDeltaMinus, b, n_len);
+
+}
+
 
 __host__ void free_cuda_memory(double *U) {
     cudaFree(U);
