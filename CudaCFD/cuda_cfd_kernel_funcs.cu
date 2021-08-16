@@ -134,6 +134,20 @@ void obtain_cell_intface_value_from_Q_device(double *R, double *L, double *s, do
     cudaDeviceSynchronize();
 }
 
+
+__global__ void test_solve_1d_conv_eq(double *Qtemp, double *Q, double *R, double *L, double dt, int n_len) {
+    int i;    
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (2 < i && i < n_len - 3) 
+        Qtemp[i] = Q[i] - dt * (R[i] - R[i-1]);
+}
+
+void test_solve_1d_conv_eq_device(double *Qtemp, double *Q, double *R, double *L, double dt, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    test_solve_1d_conv_eq(Qtemp, Q, R, L, dt, n_len);
+}
+
 __host__ void free_cuda_memory(double *U) {
     cudaFree(U);
 }

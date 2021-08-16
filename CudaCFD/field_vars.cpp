@@ -46,6 +46,7 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     allocate_cuda_memory((void **) &gSlope, n_bytes);
     allocate_cuda_memory((void **) &gLeft, n_bytes);
     allocate_cuda_memory((void **) &gRight, n_bytes);
+    allocate_cuda_memory((void **) &gArrayTemp, n_bytes);
     cArray =      (double *) malloc(n_bytes);
     cDeltaPlus  = (double *) malloc(n_bytes);
     cDeltaMinus = (double *) malloc(n_bytes);
@@ -54,6 +55,7 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     cSlope = (double *) malloc(n_bytes);
     cLeft  = (double *) malloc(n_bytes);
     cRight = (double *) malloc(n_bytes);
+    cArrayTemp = (double *) malloc (n_bytes);
 
     // memory and other calculation test
     testMemoryDerivertiveLimiterAndFlux();
@@ -207,6 +209,52 @@ double FieldVars1D::testObtainCorrelFactor(double *U, double *V, int n_len) {
         return UV / sqrt(UU * VV);
     }
 
+}
+
+int FieldVars1D::testSolveConvectiveEq() {
+    // solving 1 dimensional convective equation of which phase speed is 1 and dt = 0.1 and dx = 1 for testing
+
+    double dt = 0.1;
+    int i, n, N = 10;
+
+    // set initial condition
+    initArrayWithHeavisiteFunc(cArray, n_len);
+    // memory copy to GPU
+    copy_memory_host_to_device(gArray, cArray, n_bytes);
+
+    
+    // CPU calculation
+    for (n = 0; n < N; n++) {
+        obtainDeltas();
+        obtainMinmod();
+        obtainSlope();
+        obtainCellIntfaceValue();
+        for (i = 1; i < n_len - 1; i++) 
+            cArrayTemp[i] = cArray[i] - dt * (cRight[i] - cRight[i - 1]);
+        setNeumannBoundaryCondition();
+        renewValues();
+    }
+
+    // GPU calculation
+    for (n = 0; n < N; n++) {
+        obtain_cell_intface_value_from_Q_device(gRight, gLeft, gSlope, gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, gArray, 
+            kappa, epsilon, b, dimGrid, dimBlock, n_len);
+    }
+
+}
+
+void FieldVars1D::setNeumannBoundaryCondition() {
+    cArray[2] = cArrayTemp[3];
+    cArray[1] = cArrayTemp[3];
+    cArray[0] = cArrayTemp[3];
+    cArray[n_len - 1] = cArrayTemp[n_len - 4];
+    cArray[n_len - 2] = cArrayTemp[n_len - 4];
+    cArray[n_len - 3] = cArrayTemp[n_len - 4];
+}
+
+void FieldVars1D::renewValues() {
+    int i;
+    for (i = 0; i < n_len; i++) cArray[i] = cArrayTemp[i];
 }
 
 int FieldVars1D::testMemoryCopy(double *cArray, double *gArray, double *gArrayMemoryTest, double *cArrayMemoryTest, char var_name[64]) {

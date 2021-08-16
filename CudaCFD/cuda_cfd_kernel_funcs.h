@@ -16,6 +16,7 @@ void obtain_minmod_device(double *gBarDeltaPlus, double *gBarDeltaMinus, double 
 void obtain_slope_device(double *Slope, double *DeltaPlus, double *DeltaMinus, double epsilon, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
 void obtain_cell_intface_value_device(double *R, double *L, double *Q, double *DeltaPlus, double *DeltaMinus, double *s, double kappa, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
 void obtain_cell_intface_value_from_Q_device(double *R, double *L, double *s, double *BarDeltaPlus, double *BarDeltaMinus, double *DeltaPlus, double *DeltaMinus, double *Q, double kappa, double epsilon, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
+void test_solve_1d_conv_eq_device(double *Qtemp, double *Q, double *R, double *L, double dt, GridDim *dimGrid, BlockDim *dimBlock, int n_len);
 
 void free_cuda_memory(double *gU);
 

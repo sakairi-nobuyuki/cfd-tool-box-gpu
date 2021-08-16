@@ -5,7 +5,7 @@
 
 class FieldVars1D {
     protected:
-        double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest;
+        double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest, *gArrayTemp, *cArrayTemp;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         double *cBarDeltaPlus, *cBarDeltaMinus, *gBarDeltaPlus, *gBarDeltaMinus, *cBarDeltaPlusTest, *cBarDeltaMinusTest;
         double *cSlope, *gSlope;
@@ -34,6 +34,9 @@ class FieldVars1D {
         void obtainMinmod();
         void obtainSlope();
         void obtainCellIntfaceValue();
+        void setNeumannBoundaryCondition();
+        void renewValues();
+        int testSolveConvectiveEq();
     public:
         int n_len;
         char name[64];
