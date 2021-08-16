@@ -27,7 +27,8 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     printf("  configuration of CUDA memory: dim3 grid(%d, %d), block(%d, %d, %d)\n", dimGrid->x, dimGrid->y, dimBlock->x, dimBlock->y, dimBlock->z);
 
     // setting CFD something
-    b = (3.0 - 1.0 / 3.0) / (1.0 - 1.0 / 3.0);
+    kappa = 1.0 / 3.0;
+    b = (3.0 - kappa) / (1.0 - kappa);
     epsilon = 0.01;
 
     // setting debug mode on/off
@@ -42,21 +43,41 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     allocate_cuda_memory((void **) &gDeltaMinus, n_bytes);
     allocate_cuda_memory((void **) &gBarDeltaPlus,  n_bytes);
     allocate_cuda_memory((void **) &gBarDeltaMinus, n_bytes);
+    allocate_cuda_memory((void **) &gSlope, n_bytes);
+    allocate_cuda_memory((void **) &gLeft, n_bytes);
+    allocate_cuda_memory((void **) &gRight, n_bytes);
     cArray =      (double *) malloc(n_bytes);
     cDeltaPlus  = (double *) malloc(n_bytes);
     cDeltaMinus = (double *) malloc(n_bytes);
     cBarDeltaPlus  = (double *) malloc(n_bytes);
     cBarDeltaMinus = (double *) malloc(n_bytes);
+    cSlope = (double *) malloc(n_bytes);
+    cLeft  = (double *) malloc(n_bytes);
+    cRight = (double *) malloc(n_bytes);
 
-    // memory test
-    testMemory();
+    // memory and other calculation test
+    testMemoryDerivertiveLimiterAndFlux();
 
 }
 
 
 FieldVars1D::~FieldVars1D() {
     free(cArray);
+    free(cDeltaPlus);
+    free(cDeltaMinus);
+    free(cBarDeltaPlus);
+    free(cBarDeltaMinus);
+    free(cSlope);
+    free(cLeft);
+    free(cRight);
     free_cuda_memory(gArray);
+    free_cuda_memory(gDeltaPlus);
+    free_cuda_memory(gDeltaMinus);
+    free_cuda_memory(gBarDeltaPlus);
+    free_cuda_memory(gBarDeltaMinus);
+    free_cuda_memory(gSlope);
+    free_cuda_memory(gLeft);
+    free_cuda_memory(gRight);
 }
 
 
@@ -99,7 +120,7 @@ void FieldVars1D::obtainMinmod() {
             * fmaxf(0.0, fminf(fabs(cDeltaPlus[i]), copysignf(1.0, cDeltaPlus[i]) * b * cDeltaMinus[i]));
     }
 
-    for (i = 0; i < n_len - 1; i++) {
+    for (i = 0; i < n_len; i++) {
         cBarDeltaMinus[i] 
             = copysignf(1.0, cDeltaMinus[i]) 
             * fmaxf(0.0, fminf(fabs(cDeltaMinus[i]), copysignf(1.0, cDeltaMinus[i]) * b * cDeltaPlus[i]));
@@ -107,6 +128,30 @@ void FieldVars1D::obtainMinmod() {
 
 }
 
+
+void FieldVars1D::obtainSlope() {
+    int i;
+
+    for (i = 0; i < n_len; i++) {
+        cSlope[i] = (2.0 * cBarDeltaPlus[i] * cBarDeltaMinus[i] + epsilon) 
+        / (pow(cBarDeltaPlus[i], 2.0) + pow(cBarDeltaMinus[i], 2.0) + epsilon);
+    }
+}
+
+
+void FieldVars1D::obtainCellIntfaceValue() {
+    int i;
+
+    for (i = 0; i < n_len - 1; i++) {
+        cLeft[i] = cArray[i] + 0.25 * cSlope[i] * ((1.0 - kappa * cSlope[i]) * cBarDeltaMinus[i] + (1.0 + kappa * cSlope[i]) * cBarDeltaPlus[i]);
+    }
+    cLeft[n_len - 1] = cLeft[n_len - 2];
+
+    for (i = 0; i < n_len; i++) {
+        cRight[i] = cArray[i+1]  - 0.25 * cSlope[i+1] * ((1.0 - kappa * cSlope[i+1]) * cBarDeltaPlus[i+1] + (1.0 + kappa * cSlope[i+1]) * cBarDeltaMinus[i+1]);
+    }
+    cRight[0] = cRight[1];
+}
 
 void initArrayWithHeavisiteFunc(double *Array, int n_len) {
     //  initialize the Array by Heavisite step function
@@ -204,7 +249,7 @@ int FieldVars1D::testDerivertive() {
     return n_failure;
 }
 
-void FieldVars1D::testMemory() {
+void FieldVars1D::testMemoryDerivertiveLimiterAndFlux() {
     int n_failure = 0;
     //double Cor;
 
@@ -271,16 +316,43 @@ int FieldVars1D::testObtainDeltasMinmodAbstract(void (*initArray) (double *cArra
     n_failure += testDeltasMinmodValidation(cDeltaMinus, cDeltaMinusTest, n_len, "delta-", test_name);
 
     // Testing minmod
+    cuda_device_synchronize();
     obtain_minmod_device(gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, b, dimGrid, dimBlock, n_len);
     cuda_device_synchronize();
     obtainMinmod();
-    cuda_device_synchronize();
     copy_memory_device_to_host(cDeltaPlusTest, gBarDeltaPlus, n_bytes);
     copy_memory_device_to_host(cDeltaMinusTest, gBarDeltaMinus, n_bytes);
 
     n_failure += testDeltasMinmodValidation(cBarDeltaPlus,  cDeltaPlusTest,  n_len, "minmod+", test_name);
     n_failure += testDeltasMinmodValidation(cBarDeltaMinus, cDeltaMinusTest, n_len, "minmod-", test_name);
     
+    // testing slope
+    cuda_device_synchronize();
+    obtain_slope_device(gSlope, gBarDeltaPlus, gBarDeltaMinus, epsilon, dimGrid, dimBlock, n_len);
+    cuda_device_synchronize();
+    obtainSlope();
+    copy_memory_device_to_host(cDeltaPlusTest, gSlope, n_bytes);
+    n_failure += testDeltasMinmodValidation(cSlope,  cDeltaPlusTest,  n_len, "slope", test_name);
+
+    // testing Left and Right values
+    cuda_device_synchronize();
+    obtain_cell_intface_value_device(gRight, gLeft, gArray, gBarDeltaPlus, gBarDeltaMinus, gSlope, kappa, dimGrid, dimBlock, n_len);
+    cuda_device_synchronize();
+    obtainCellIntfaceValue();
+    copy_memory_device_to_host(cDeltaPlusTest, gRight, n_bytes);
+    n_failure += testDeltasMinmodValidation(cRight,  cDeltaPlusTest,  n_len, "Right", test_name);
+    copy_memory_device_to_host(cDeltaPlusTest, gLeft, n_bytes);
+    n_failure += testDeltasMinmodValidation(cLeft,  cDeltaPlusTest,  n_len, "Left", test_name);
+
+    //  directly obtaining QR and QL and its test
+    printf("  Directly get QR and QL test:\n");
+    obtain_cell_intface_value_from_Q_device(gRight, gLeft, gSlope, gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, gArray, 
+        kappa, epsilon, b, dimGrid, dimBlock, n_len);
+    copy_memory_device_to_host(cDeltaPlusTest, gRight, n_bytes);
+    n_failure += testDeltasMinmodValidation(cRight,  cDeltaPlusTest,  n_len, "Right", test_name);
+    copy_memory_device_to_host(cDeltaPlusTest, gLeft, n_bytes);
+    n_failure += testDeltasMinmodValidation(cLeft,  cDeltaPlusTest,  n_len, "Left", test_name);        
+
     return n_failure;
 }
 

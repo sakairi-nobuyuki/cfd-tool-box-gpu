@@ -8,8 +8,9 @@ class FieldVars1D {
         double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         double *cBarDeltaPlus, *cBarDeltaMinus, *gBarDeltaPlus, *gBarDeltaMinus, *cBarDeltaPlusTest, *cBarDeltaMinusTest;
-        double *cSlope, gSlope;
-        double b, epsilon;
+        double *cSlope, *gSlope;
+        double *cRight, *cLeft, *gRight, *gLeft;
+        double b, epsilon, kappa;
         int n_bytes;
         BlockDim *dimBlock;
         GridDim *dimGrid;
@@ -17,7 +18,7 @@ class FieldVars1D {
 
         void initVarsWithZero();
 
-        void testMemory();
+        void testMemoryDerivertiveLimiterAndFlux();
         int testObtainDeltasMinmodAbstract(void (*initArray) (double *cArray, int n_len), double *gArray, double *gDeltaPlus, double *gDeltaMinus, 
             double *cArray, double *cDeltaPlusTest, double *cDeltaMinusTest, int n_len, int n_bytes, char test_name[64]);
         
@@ -31,6 +32,8 @@ class FieldVars1D {
 
         void obtainDeltas();
         void obtainMinmod();
+        void obtainSlope();
+        void obtainCellIntfaceValue();
     public:
         int n_len;
         char name[64];

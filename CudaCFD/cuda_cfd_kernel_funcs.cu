@@ -35,35 +35,7 @@ __host__ void copy_memory_device_to_device(double *gV, double *gU, int n_bytes) 
     cudaMemcpy (gV, gU, n_bytes, cudaMemcpyDeviceToDevice);
 }
 
-__host__ void copy_memory_mock() {
-    double *gU, *U, *V;
-    int i, n;
 
-    printf("In memory test mock, before memory allocation, address U: %p, V: %p, gU: %p\n", U, V, gU);
-
-    n = 10;
-    U = (double *) malloc(sizeof(double) * n);
-    V = (double *) malloc(sizeof(double) * n);
-    cudaMalloc((double **) &gU, sizeof(double) * n);
-
-    printf("In memory test mock, after memory allocation, address U: %p, V: %p, gU: %p\n", U, V, gU);
-
-    for (i = 0; i < n; i++) U[i] = (double) i;
-    printf("In mock test, U\n  ");
-    for (i = 0; i < n; i++) printf("%lf  ", U[i]);
-    printf("\n");
-
-    cudaMemcpy(gU, U, sizeof(double) * n, cudaMemcpyHostToDevice);
-    cudaMemcpy(V, gU, sizeof(double) * n, cudaMemcpyDeviceToHost);
-    printf("In mock test, V\n  ");
-    for (i = 0; i < n; i++) printf("%lf  ", V[i]);
-    printf("\n");
-    printf("In mock test, assert U == V\n  ");
-    for (i = 0; i < n; i++) assert(U[i] == V[i]);
-    printf("\n");
-
-    printf("In memory test mock, after test memory allocation, address U: %p, V: %p, gU: %p\n", U, V, gU);
-}
 
 void cuda_device_synchronize() {
     cudaDeviceSynchronize();
@@ -110,8 +82,6 @@ __global__ void obtain_minmod(double *gBarDeltaPlus, double *gBarDeltaMinus, dou
             = copysignf(1.0, gDeltaMinus[i]) 
             * fmaxf(0.0, fminf(fabs(gDeltaMinus[i]), copysignf(1.0, gDeltaMinus[i]) * b * gDeltaPlus[i]));
 
-            
-
 }
 
 void obtain_minmod_device(double *gBarDeltaPlus, double *gBarDeltaMinus, double *gDeltaPlus, double *gDeltaMinus, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
@@ -121,11 +91,48 @@ void obtain_minmod_device(double *gBarDeltaPlus, double *gBarDeltaMinus, double 
 }
 
 
-__global__ void obtain_slope(double *gSlope, double *gDeltaPlus, double *gDeltaMinus, double epsilon, int n_len) {
-    
-    
+__global__ void obtain_slope(double *Slope, double *DeltaPlus, double *DeltaMinus, double epsilon, int n_len) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (0 <= i && i < n_len) Slope[i] = (2.0 * DeltaPlus[i] * DeltaMinus[i] + epsilon) 
+        / (pow(DeltaPlus[i], 2.0) + pow(DeltaMinus[i], 2.0) + epsilon);
 }
 
+void obtain_slope_device(double *Slope, double *DeltaPlus, double *DeltaMinus, double epsilon, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    obtain_slope<<<grid, block>>>(Slope, DeltaPlus, DeltaMinus, epsilon, n_len);
+}
+
+
+__global__ void obtain_cell_intface_values(double *R, double *L, double *Q, double *DeltaPlus, double *DeltaMinus, double *s, double kappa, int n_len) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (0 <= i && i < n_len - 1) L[i] = Q[i] + 0.25 * s[i] * ((1.0 - kappa * s[i]) * DeltaMinus[i] + (1.0 + kappa) * s[i] * DeltaPlus[i]);
+    if (i == n_len - 1) L[n_len - 1] = L[n_len - 2];
+
+    if (0 < i && i < n_len) R[i] = Q[i+1] - 0.25 * s[i+1] * ((1.0 - kappa * s[i+1]) * DeltaPlus[i+1] + (1.0 + kappa * s[i+1]) * DeltaMinus[i+1]);
+    if (i == 0) R[0] = R[1];
+}
+
+void obtain_cell_intface_value_device(double *R, double *L, double *Q, double *DeltaPlus, double *DeltaMinus, double *s, double kappa, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    obtain_cell_intface_values<<<grid, block>>>(R, L, Q, DeltaPlus, DeltaMinus, s, kappa, n_len);
+}
+
+void obtain_cell_intface_value_from_Q_device(double *R, double *L, double *s, double *BarDeltaPlus, double *BarDeltaMinus, double *DeltaPlus, double *DeltaMinus, double *Q, double kappa, double epsilon, double b, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    cudaDeviceSynchronize();
+    obtain_delta_plus_device<<<grid, block>>>(DeltaPlus, Q, n_len);
+    obtain_delta_minus_device<<<grid, block>>>(DeltaMinus, Q, n_len);
+    cudaDeviceSynchronize();
+    obtain_minmod<<<grid, block>>>(BarDeltaPlus, BarDeltaMinus, DeltaPlus, DeltaMinus, b, n_len);
+    cudaDeviceSynchronize();
+    obtain_slope<<<grid, block>>>(s, BarDeltaPlus, BarDeltaMinus, epsilon, n_len);
+    cudaDeviceSynchronize();
+    obtain_cell_intface_values<<<grid, block>>>(R, L, Q, DeltaPlus, DeltaMinus, s, kappa, n_len);    
+    cudaDeviceSynchronize();
+}
 
 __host__ void free_cuda_memory(double *U) {
     cudaFree(U);
