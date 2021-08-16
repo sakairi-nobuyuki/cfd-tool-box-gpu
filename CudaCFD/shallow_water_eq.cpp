@@ -9,7 +9,7 @@
 #include "field_vars.h"
 #include "cuda_cfd_kernel_funcs.h"
 #include "shallow_water_eq.h"
-
+#include "cuda_memory_config.h"
 
 using namespace std;
 
@@ -25,12 +25,19 @@ ShallowWaterEq::ShallowWaterEq(int n_len) {
 void ShallowWaterEq::init(int n_len_inp, char name_inp[64]) {
     n_len = n_len_inp;
     sprintf(name, "%s", name_inp);
-    
-    cout << "initializing \"" << name << "\" of shallow water eq class" << endl;
-    cout << "  length: " << n_len << endl;
-    
-    U.initFieldVars(n_len, "U");
+    cout << "Initializing \"" << name_inp << "\" of shallow water eq" << endl;
+    cout << "  configure CUDA memory" << endl;
+    setCudaGridBlockConfig1D(n_len, &dimGrid, &dimBlock);
+    printf("    grid (%d, %d), block (%d, %d, %d)\n", dimGrid.x, dimGrid.y, dimBlock.x, dimBlock.y, dimBlock.z);
+
+
+    cout << "  initializing \"" << name << "\" of shallow water eq class" << endl;
+    cout << "    length: " << n_len << endl;
+    H.initFieldVars(n_len, "H", &dimGrid, &dimBlock);
+    HU.initFieldVars(n_len, "HU", &dimGrid, &dimBlock);
+    //U.initFieldVars(n_len, "U");
     //HU.init_field_vars(n_len, "HU");
+
 
 }
 

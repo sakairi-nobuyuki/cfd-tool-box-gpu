@@ -3,19 +3,21 @@
 
 #include <string>
 #include "field_vars.h"
+#include "cuda_memory_config.h"
 
 //class FieldVars1d;
 class ShallowWaterEq {
     protected:
-
+        BlockDim dimBlock;
+        GridDim dimGrid;
 
     public:
         int n_len;
         char name[64];
 
 
-        FieldVars1D U;
-        FieldVars1D HU;
+        FieldVars1D H, HU;
+        
 
         ShallowWaterEq();
         ShallowWaterEq(int n_len);
