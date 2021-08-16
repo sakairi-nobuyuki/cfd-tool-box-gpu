@@ -33,7 +33,8 @@ void ShallowWaterEq::init(int n_len_inp, char name_inp[64]) {
 
     cout << "  initializing \"" << name << "\" of shallow water eq class" << endl;
     cout << "    length: " << n_len << endl;
-    U.initFieldVars(n_len, "U", &dimGrid, &dimBlock);
+    H.initFieldVars(n_len, "H", &dimGrid, &dimBlock);
+    HU.initFieldVars(n_len, "HU", &dimGrid, &dimBlock);
     //U.initFieldVars(n_len, "U");
     //HU.init_field_vars(n_len, "HU");
 

@@ -46,8 +46,9 @@ __global__ void obtain_delta_plus_device(double *gDelta, double *gU, int n_len) 
     int i;
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (0 < i && i < n_len) gDelta[i] = gU[i + 1] - gU[i];
-    if (i == 0)             gDelta[i] = gU[i + 1] - gU[i];
+    if (0 <= i && i < n_len) gDelta[i] = gU[i + 1] - gU[i];
+    //if (i == 0)             gDelta[i] = gU[i + 1] - gU[i];
+    //cudaDeviceSynchronize();
     if (i == n_len - 1)     gDelta[i] = gDelta[i - 1];
 }
 
@@ -56,8 +57,9 @@ __global__ void obtain_delta_minus_device(double *gDelta, double *gU, int n_len)
     i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (0 < i && i < n_len) gDelta[i] = gU[i] - gU[i - 1];
+    //cudaDeviceSynchronize();
     if (i == 0)             gDelta[i] = gDelta[i + 1];
-    if (i == n_len - 1)     gDelta[i] = gU[i] - gU[i - 1];
+    //if (i == n_len - 1)     gDelta[i] = gU[i] - gU[i - 1];
 }
 
 //void obtain_deltas_device(double *gU, double *gDeltaPlus, double *gDeltaMinus, int n_len) {
@@ -140,18 +142,77 @@ __global__ void test_solve_1d_conv_eq(double *Qtemp, double *Q, double *R, doubl
     i = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (2 < i && i < n_len - 3) 
-        Qtemp[i] = Q[i] - dt * (R[i] - R[i-1]);
+        Qtemp[i] = Q[i] - dt * (L[i] - L[i-1]);
+}
+
+__global__ void renew_values(double *Q, double *Qtemp, int n_len) {
+    int i;    
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 <= i && i < n_len) Q[i] = Qtemp[i];
+}
+
+__global__ void set_neumann_boundary_condition(double *Q, double *Qtemp, int n_len) {
+    int i;    
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+    Q[0] = Qtemp[3];
+    Q[1] = Qtemp[3];
+    Q[2] = Qtemp[3];
+    Q[n_len - 1] = Qtemp[n_len - 4]; 
+    Q[n_len - 2] = Qtemp[n_len - 4]; 
+    Q[n_len - 3] = Qtemp[n_len - 4]; 
 }
 
 void test_solve_1d_conv_eq_device(double *Qtemp, double *Q, double *R, double *L, double dt, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
     dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
-    test_solve_1d_conv_eq(Qtemp, Q, R, L, dt, n_len);
+    //double *U, *V;
+    //int n_bytes = sizeof(double) * n_len;
+
+    //U = (double *) malloc (sizeof(double) * n_len);
+    //V = (double *) malloc (sizeof(double) * n_len);
+
+    //printf("  in GPU solving 1d conv. eq. dt: %lf\n", dt);
+    
+    cudaDeviceSynchronize();
+    test_solve_1d_conv_eq<<<grid, block>>>(Qtemp, Q, R, L, dt, n_len);
+    cudaDeviceSynchronize();
+    
+    //printf("  confirm Q and Qtemp\n");
+    //cudaMemcpy (U, Qtemp, n_bytes, cudaMemcpyDeviceToHost);
+    //cudaMemcpy (V, Q, n_bytes, cudaMemcpyDeviceToHost);
+    //print_two_vars(U, V, n_len);
+    
+    
+    renew_values<<<grid, block>>>(Q, Qtemp, n_len);
+    cudaDeviceSynchronize();
+ 
+    set_neumann_boundary_condition<<<grid, block>>>(Q, Qtemp, n_len);
+    cudaDeviceSynchronize();
+
+    //free(U);
 }
 
 __host__ void free_cuda_memory(double *U) {
     cudaFree(U);
 }
 
+void print_var(double *U, int n_len) {
+    int i;
 
+    printf("  confirming one var in cuda ker. func.:\n");
+    for (i = 0; i < n_len; i++) printf("    U: %lf\n", U[i]); 
+    printf("\n");
+
+}
+
+void print_two_vars(double *U, double *V, int n_len) {
+    int i;
+
+    printf("  confirming one var in cuda ker. func.:\n");
+    for (i = 0; i < n_len; i++) printf("    U: %lf, V: %lf\n", U[i], V[i]); 
+    printf("\n");
+
+
+}
 
 #endif

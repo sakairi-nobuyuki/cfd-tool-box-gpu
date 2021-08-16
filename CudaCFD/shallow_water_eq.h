@@ -16,8 +16,8 @@ class ShallowWaterEq {
         char name[64];
 
 
-        FieldVars1D U;
-        FieldVars1D HU;
+        FieldVars1D H, HU;
+        
 
         ShallowWaterEq();
         ShallowWaterEq(int n_len);

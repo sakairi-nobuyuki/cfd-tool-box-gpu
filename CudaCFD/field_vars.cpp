@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include "field_vars.h"
 #include "cuda_cfd_kernel_funcs.h"
@@ -59,7 +60,8 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
 
     // memory and other calculation test
     testMemoryDerivertiveLimiterAndFlux();
-
+    if (debug_mode == 0) testSolveConvectiveEq();
+    printf("finish initializing FieldVars1D of %s: \n", name);
 }
 
 
@@ -214,8 +216,11 @@ double FieldVars1D::testObtainCorrelFactor(double *U, double *V, int n_len) {
 int FieldVars1D::testSolveConvectiveEq() {
     // solving 1 dimensional convective equation of which phase speed is 1 and dt = 0.1 and dx = 1 for testing
 
-    double dt = 0.1;
-    int i, n, N = 10;
+    double dt = 0.1, Cor;
+    int i, n, N = 10, n_failures;
+    time_t start_time, end_time;
+
+    cArrayMemoryTest = (double *) malloc(n_bytes);
 
     // set initial condition
     initArrayWithHeavisiteFunc(cArray, n_len);
@@ -224,23 +229,44 @@ int FieldVars1D::testSolveConvectiveEq() {
 
     
     // CPU calculation
+    start_time = time (NULL);
     for (n = 0; n < N; n++) {
         obtainDeltas();
         obtainMinmod();
         obtainSlope();
         obtainCellIntfaceValue();
         for (i = 1; i < n_len - 1; i++) 
-            cArrayTemp[i] = cArray[i] - dt * (cRight[i] - cRight[i - 1]);
-        setNeumannBoundaryCondition();
+            cArrayTemp[i] = cArray[i] - dt * (cLeft[i] - cLeft[i - 1]);
         renewValues();
+        setNeumannBoundaryCondition();
+        
     }
+    end_time = time (NULL);
+    printf ("  CPU calc time: %ld\n", end_time - start_time);
 
     // GPU calculation
+    start_time = time (NULL);
     for (n = 0; n < N; n++) {
+        
         obtain_cell_intface_value_from_Q_device(gRight, gLeft, gSlope, gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, gArray, 
             kappa, epsilon, b, dimGrid, dimBlock, n_len);
+        test_solve_1d_conv_eq_device(gArrayTemp, gArray, gRight, gLeft, dt, dimGrid, dimBlock, n_len);
+        copy_memory_device_to_host(cArrayMemoryTest, gArray, n_bytes);
+        //printOneVar(cArrayMemoryTest, n_len);
+        //printf("  %d th iteration end.", n);
     }
+    end_time = time (NULL);
 
+    printf ("  GPU calc time: %ld\n", end_time - start_time);
+    copy_memory_device_to_host(cArrayMemoryTest, gArray, n_bytes);
+    n_failures = compareArrays(cArray, cArrayMemoryTest, n_len);
+    
+    printf ("  Validation of 1-dimensional convetive eq:\n");
+    printf ("      Correlation factor between 2 memories: %lf\n", Cor);
+    validateTwoVarsByCorrelationFactor(cArray, cArrayMemoryTest, "CPU", "GPU", 0.5, n_len);
+    if (debug_mode == 0) printTwoVars(cArray, cArrayMemoryTest, n_len);
+
+    free(cArrayMemoryTest);
 }
 
 void FieldVars1D::setNeumannBoundaryCondition() {
@@ -425,6 +451,31 @@ int FieldVars1D::testDeltasMinmodValidation(double *cArray1, double *cArray2, in
         return 0;
     }
 
+}
+
+void FieldVars1D::printOneVar(double *U, int n_len) {
+//  print the elements of U and V to std output
+    int i;
+
+    printf("  confirming one var:\n");
+    for (i = 0; i < n_len; i++)  printf("    U: %lf\n", U[i]);
+    printf("\n");
+
+}
+
+int  FieldVars1D::validateTwoVarsByCorrelationFactor(double *U, double *V, char var_name_1[64], char var_name_2[64], double threshCor, int n_len) {
+    double Cor;
+    Cor = testObtainCorrelFactor(U, V, n_len);
+
+    if (Cor > threshCor) {
+        printf("  Correlation factors between %s and %s was %lf, while threshold is %lf\n  COR FACTOR IS TOO LOW\n", 
+        var_name_1, var_name_2, Cor, threshCor);
+        return -1;
+    } else {
+        printf("  Correlation factors between %s and %s was %lf, while threshold is %lf\n  VALIDATION OK!!\n", 
+        var_name_1, var_name_2, Cor, threshCor);
+        return 0;
+    }
 }
 
 void FieldVars1D::printTwoVars(double *U, double *V, int n_len) {

@@ -26,9 +26,11 @@ class FieldVars1D {
         int testMemoryCopy(double *cArray, double *gArray, double *gArrayMemoryTest, double *cArrayMemoryTest, char var_name[64]);
         int testDerivertive();
         int testDeltasMinmodValidation(double *cArray1, double *cArray2, int n_len, char var_type[64], char test_name[64]);
-        
+        int validateTwoVarsByCorrelationFactor(double *U, double *V, char var_name_1[64], char var_name_2[64], double threshCor, int n_len); 
+
         int compareArrays(double *ResCPU, double *ResGPU, int n_len);
         void printTwoVars(double *U, double *V, int n_len);
+        void printOneVar(double *U, int n_len);
 
         void obtainDeltas();
         void obtainMinmod();
