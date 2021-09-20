@@ -46,6 +46,7 @@ class FieldVars1D {
         ~FieldVars1D();
         
         void initFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp);
+        void initAuxFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp);
         //void initFieldVars(int array_length, char var_name[64]);
         void output(double time);
         
