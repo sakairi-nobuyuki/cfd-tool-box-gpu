@@ -10,8 +10,9 @@
 #include "cuda_cfd_kernel_funcs.h"
 
 FieldVars1D::FieldVars1D() {}
+FieldVars1D::~FieldVars1D() {}
 //void FieldVars1D::initFieldVars(int array_length, char var_name[64]) {
-void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
+void FieldVars1D::initUnknownFieldVars1D(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
     // setting variable name
     sprintf(name, "%s", var_name);
     printf("initializing FieldVars1D of %s: \n", name);
@@ -65,7 +66,7 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
 }
 
 
-FieldVars1D::~FieldVars1D() {
+void FieldVars1D::deinitUnknownFieldVars1D() {
     free(cArray);
     free(cDeltaPlus);
     free(cDeltaMinus);
@@ -84,7 +85,9 @@ FieldVars1D::~FieldVars1D() {
     free_cuda_memory(gRight);
 }
 
-void FieldVars1D::initAuxFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
+void FieldVars1D::initFluxFieldVars1D(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
+    int n_failure = 0;
+
     // setting variable name
     sprintf(name, "%s", var_name);
     printf("initializing Aux. FieldVars1D of %s: \n", name);
@@ -104,7 +107,32 @@ void FieldVars1D::initAuxFieldVars(int array_length, char var_name[64], GridDim 
     debug_mode = 0; 
     //debug_mode = -1; 
 
-    printf("  In aux. field_vars, allocating GPU memory\n");
+    printf("  In flux field_var, %s allocating GPU memory\n", name);
+    allocate_cuda_memory((void **) &gArray,      n_bytes);
+    allocate_cuda_memory((void **) &gArrayTemp, n_bytes);
+    allocate_cuda_memory((void **) &gLeft, n_bytes);
+    allocate_cuda_memory((void **) &gRight, n_bytes);
+    cArray =      (double *) malloc(n_bytes);
+    cArrayTemp = (double *) malloc (n_bytes);
+    cLeft  = (double *) malloc(n_bytes);
+    cRight = (double *) malloc(n_bytes);
+
+    printf("  Simple memory copy test of %s:\n", name);
+    initArrayWithHeavisiteFunc(cArray, n_len);
+    n_failure += testMemoryCopy(cArray, gArray, gArrayTemp, cArrayTemp, "gArray");
+
+}
+
+
+void FieldVars1D::deinitFluxFieldVars1D() {
+    free(cArray);
+    free(cLeft);
+    free(cRight);
+    free_cuda_memory(gArray);
+    free_cuda_memory(gLeft);
+    free_cuda_memory(gRight);
+
+
 }
 
 void FieldVars1D::initVarsWithZero() {

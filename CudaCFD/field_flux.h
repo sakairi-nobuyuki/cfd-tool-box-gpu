@@ -1,14 +1,11 @@
-#ifndef __FIELD_VARS_H__
-#define __FIELD_VARS_H__
+#ifndef __FIELD_FLUX_H__
+#define __FIELD_FLUX_H__
 
 #include "cuda_memory_config.h"
 
-class FieldVars1D {
+class FieldFlux1D {
     protected:
         double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest, *gArrayTemp, *cArrayTemp;
-        double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
-        double *cBarDeltaPlus, *cBarDeltaMinus, *gBarDeltaPlus, *gBarDeltaMinus, *cBarDeltaPlusTest, *cBarDeltaMinusTest;
-        double *cSlope, *gSlope;
         double *cRight, *cLeft, *gRight, *gLeft;
         double b, epsilon, kappa;
         int n_bytes;

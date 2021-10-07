@@ -74,7 +74,9 @@ classDiagram
 ```
 
 
-## Reference documts
+## Reference documents
+
+### CUDA computation
 
 https://http.download.nvidia.com/developer/cuda/jp/CUDA_Programming_Basics_PartI_jp.pdf
 https://http.download.nvidia.com/developer/cuda/jp/CUDA_Programming_Basics_PartII_jp.pdf
@@ -84,3 +86,39 @@ https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html
 https://tech-blog.optim.co.jp/entry/2019/08/15/163000
 
 https://co-crea.jp/wp-content/uploads/2016/07/File_2.pdf
+
+### shallow water eq. with MUSCL
+
+https://reader.elsevier.com/reader/sd/pii/S0898122114004672?token=D737314E0310DFF74911D98D8EE6FC8FC7848BFE3D8DD1853121E87896A54B7FAAEB7CF75CB24C2AD96C41B3B87F42BA&originRegion=us-east-1&originCreation=20210816170543
+
+- Journal of Applied Mathematics, Szu-Hsien Peng, Volume 2012, Article ID 489269, 14 pages, 
+https://www.researchgate.net/publication/292617263_Numerical_methods_for_Shallow_water_equations
+
+- Computers and Mathematics with Applications, 77(2), An improved multislope MUSCL scheme for solving shallow water equations on unstructured
+grids
+https://escholarship.org/content/qt0vs0w9mc/qt0vs0w9mc.pdf
+
+- Victor Michel-Dansac, Christophe Berthon, Stéphane Clain, Françoise Foucher. A well-balanced
+scheme for the shallow-water equations with topography. Computers & Mathematics with Applications, Elsevier, 2016, 72, pp.568 - 593. ff10.1016/j.camwa.2016.05.015ff. ffhal-01201825v2f
+https://hal.archives-ouvertes.fr/hal-01201825/document
+
+https://reader.elsevier.com/reader/sd/pii/S1877705816319749?token=CC759EEBB3E349F5DC36866CEE9491204C29E17D3D0A52146DC7DC4B634D6D892F292075D100BCC79AF454095E507F4F&originRegion=us-east-1&originCreation=20210816185317
+
+https://www.emis.de/journals/HOA/JAM/Volume2012/489269.pdf
+
+- Harten Lax, and, van Leer, SIAM rev. 25 (1) pp. 35-61, 1983, On upstream differencing and Godunov-type schemes for hyperbolic conservertion law.
+https://www.jstor.org/stable/2030019
+https://www.researchgate.net/publication/290998226_On_Upstream_Differencing_and_Godunov-Type_Schemes_for_Hyperbolic_Conservation_Laws
+
+- Christophe Berthon, Victor Michel-Dansac. A simple fully well-balanced and entropy preserving
+scheme for the shallow-water equations. Applied Mathematics Letters, Elsevier, 2018, 86, pp.284-290.
+ff10.1016/j.aml.2018.07.013ff. ffhal-01708991v2f
+https://hal.archives-ouvertes.fr/hal-01708991v2/document
+
+- https://www.math.sciences.univ-nantes.fr/~berthon/publications/publis.htm
+
+- SIAM J. SCI. STAT. COMPUT. Vol. 5, No. 1, March 1984, ON THE RELATION BETWEEN THE UPWIND-DIFFERENCING SCHEMES OF GODUNOV, ENGQUIST-OSHER AND ROE
+https://www.researchgate.net/publication/265398564_On_the_Relation_Between_the_Upwind-Differencing_Schemes_of_Godunov_Engquist-Osher_and_Roe
+
+- Roe, Journal of Computational Physics 43(2):357-372, Approximate Riemann Solvers, Parameter Vector, and Difference Schemes
+https://www.researchgate.net/publication/222453065_Approximate_Riemann_Solvers_Parameter_Vector_and_Difference_Schemes
