@@ -5,7 +5,6 @@
 
 class FieldVars1D {
     protected:
-        double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest, *gArrayTemp, *cArrayTemp;
         double *cDeltaPlus, *cDeltaMinus, *gDeltaPlus, *gDeltaMinus, *cDeltaPlusTest, *cDeltaMinusTest;
         double *cBarDeltaPlus, *cBarDeltaMinus, *gBarDeltaPlus, *gBarDeltaMinus, *cBarDeltaPlusTest, *cBarDeltaMinusTest;
         double *cSlope, *gSlope;
@@ -42,6 +41,7 @@ class FieldVars1D {
     public:
         int n_len;
         char name[64];
+        double *cArray, *gArray, *cArrayMemoryTest, *gArrayMemoryTest, *gArrayTemp, *cArrayTemp;
         FieldVars1D();
         ~FieldVars1D();
 

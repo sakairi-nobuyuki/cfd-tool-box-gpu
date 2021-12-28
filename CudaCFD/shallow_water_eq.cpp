@@ -34,22 +34,28 @@ void ShallowWaterEq::init(int n_len_inp, char name_inp[64]) {
     cout << "  initializing \"" << name << "\" of shallow water eq class" << endl;
     cout << "    length: " << n_len << endl;
     H.initUnknownFieldVars1D(n_len, "H", &dimGrid, &dimBlock);
-    HU.initUnknownFieldVars1D(n_len, "HU", &dimGrid, &dimBlock);
+    Q.initUnknownFieldVars1D(n_len, "Q", &dimGrid, &dimBlock);
     
     Hflux.initFluxFieldVars1D(n_len, "Hflux", &dimGrid, &dimBlock);
-    HUflux.initFluxFieldVars1D(n_len, "HUflux", &dimGrid, &dimBlock);
+    Qflux.initFluxFieldVars1D(n_len, "Qflux", &dimGrid, &dimBlock);
 
 
 
+}
+
+void ShallowWaterEq::createFlux() {
+    create_h_flux_device(Hflux.gArray, Q.gArray, &dimGrid, &dimBlock, n_len);
+    create_q_flux_device(Qflux.gArray, Q.gArray, H.gArray, g, &dimGrid, &dimBlock, n_len);    
+    cuda_device_synchronize();
 }
 
 
 void ShallowWaterEq::deinit() {
 
     H.deinitUnknownFieldVars1D();
-    HU.deinitUnknownFieldVars1D();
+    Q.deinitUnknownFieldVars1D();
     Hflux.deinitFluxFieldVars1D();
-    HUflux.deinitFluxFieldVars1D();
+    Qflux.deinitFluxFieldVars1D();
 }
 
 #endif
