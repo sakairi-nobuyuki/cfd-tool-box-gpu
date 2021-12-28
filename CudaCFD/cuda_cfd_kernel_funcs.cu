@@ -137,6 +137,38 @@ void obtain_cell_intface_value_from_Q_device(double *R, double *L, double *s, do
 }
 
 
+// shallow water eq.
+__global__ void create_h_flux(double *Flux, double *Q, int n_len) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 <= i && i < n_len - 1) Flux[i] = Q[i];
+}
+
+void create_h_flux_device(double *Flux, double *Q, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    create_h_flux<<<grid, block>>>(Flux, Q, n_len);
+    
+
+}
+
+
+__global__ void create_q_flux(double *Flux, double *Q, double *H, double g, int n_len) {
+    int i;
+    i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (0 <= i && i < n_len - 1) Flux[i] = pow(Q[i], 2.0) / H[i] + 0.5 * g * pow(H[i], 2.0);
+}
+
+
+void create_q_flux_device(double *Flux, double *Q, double *H, double g, GridDim *dimGrid, BlockDim *dimBlock, int n_len) {
+    dim3 grid(dimGrid->x, dimGrid->y), block(dimBlock->x, dimBlock->y, dimBlock->z);
+    create_q_flux<<<grid, block>>>(Flux, Q, H, g, n_len);
+    
+}
+
+
+//  utilities
 __global__ void test_solve_1d_conv_eq(double *Qtemp, double *Q, double *R, double *L, double dt, int n_len) {
     int i;    
     i = blockIdx.x * blockDim.x + threadIdx.x;
