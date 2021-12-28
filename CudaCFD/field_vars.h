@@ -44,9 +44,15 @@ class FieldVars1D {
         char name[64];
         FieldVars1D();
         ~FieldVars1D();
+
         
-        void initFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp);
+        void initUnknownFieldVars1D(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp);
+        void initFluxFieldVars1D(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp);
         //void initFieldVars(int array_length, char var_name[64]);
+
+        void deinitUnknownFieldVars1D();
+        void deinitFluxFieldVars1D();
+
         void output(double time);
         
 };
