@@ -8,7 +8,7 @@ LD_LIBRARIES = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 
 $(PROGRAM):$(OBJS)
-	$(CXX) $(LD_LIBRARIES) $(CPPFLAGS) $(OBJS) -o $(PROGRAM)
+	$(CXX) $(OBJS) -o $(PROGRAM) $(LD_LIBRARIES) $(CPPFLAGS)
 
 clean:
 	rm $(OBJS)	

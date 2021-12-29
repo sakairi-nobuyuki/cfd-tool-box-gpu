@@ -12,15 +12,6 @@ class TestClass {
 
 
 
-//int main() {
-//    TestClass tc;
-//    printf("%d\n", 2);
-//    printf("%d\n", tc.MagicalBanana(2));
-
-
-//    return 0;
-//}
-
 
 TEST_GROUP(TestGroup1){};
 TEST(TestGroup1, MELON_PEACH){
