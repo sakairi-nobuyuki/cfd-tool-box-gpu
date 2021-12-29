@@ -10,8 +10,9 @@
 #include "cuda_cfd_kernel_funcs.h"
 
 FieldVars1D::FieldVars1D() {}
+FieldVars1D::~FieldVars1D() {}
 //void FieldVars1D::initFieldVars(int array_length, char var_name[64]) {
-void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
+void FieldVars1D::initUnknownFieldVars1D(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
     // setting variable name
     sprintf(name, "%s", var_name);
     printf("initializing FieldVars1D of %s: \n", name);
@@ -37,7 +38,7 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
     //debug_mode = -1; 
 
     // allocate memories
-    printf("  In field_vars, allocating GPU memory\n");
+    printf("  In %s, allocating GPU memory\n", name);
     //allocate_cuda_memory(gArray, n_bytes);
     allocate_cuda_memory((void **) &gArray,      n_bytes);
     allocate_cuda_memory((void **) &gDeltaPlus,  n_bytes);
@@ -65,7 +66,7 @@ void FieldVars1D::initFieldVars(int array_length, char var_name[64], GridDim *di
 }
 
 
-FieldVars1D::~FieldVars1D() {
+void FieldVars1D::deinitUnknownFieldVars1D() {
     free(cArray);
     free(cDeltaPlus);
     free(cDeltaMinus);
@@ -84,6 +85,55 @@ FieldVars1D::~FieldVars1D() {
     free_cuda_memory(gRight);
 }
 
+void FieldVars1D::initFluxFieldVars1D(int array_length, char var_name[64], GridDim *dimGridInp, BlockDim *dimBlockInp) {
+    int n_failure = 0;
+
+    // setting variable name
+    sprintf(name, "%s", var_name);
+    printf("initializing Aux. FieldVars1D of %s: \n", name);
+
+    // obtain length of array
+    n_len   = array_length;
+    n_bytes = sizeof(double) * n_len;
+    printf("  length of the array: %d\n", n_len);
+    printf("  size of the array:   %d\n", n_bytes);
+
+    // setting CUDA memory config
+    dimBlock = dimBlockInp;
+    dimGrid  = dimGridInp;
+    printf("  configuration of CUDA memory: dim3 grid(%d, %d), block(%d, %d, %d)\n", dimGrid->x, dimGrid->y, dimBlock->x, dimBlock->y, dimBlock->z);
+
+    // setting debug mode on/off
+    debug_mode = 0; 
+    //debug_mode = -1; 
+
+    printf("  In flux field_var, %s allocating GPU memory\n", name);
+    allocate_cuda_memory((void **) &gArray,      n_bytes);
+    allocate_cuda_memory((void **) &gArrayTemp, n_bytes);
+    allocate_cuda_memory((void **) &gLeft, n_bytes);
+    allocate_cuda_memory((void **) &gRight, n_bytes);
+    cArray =      (double *) malloc(n_bytes);
+    cArrayTemp = (double *) malloc (n_bytes);
+    cLeft  = (double *) malloc(n_bytes);
+    cRight = (double *) malloc(n_bytes);
+
+    printf("  Simple memory copy test of %s:\n", name);
+    initArrayWithHeavisiteFunc(cArray, n_len);
+    n_failure += testMemoryCopy(cArray, gArray, gArrayTemp, cArrayTemp, "gArray");
+
+}
+
+
+void FieldVars1D::deinitFluxFieldVars1D() {
+    free(cArray);
+    free(cLeft);
+    free(cRight);
+    free_cuda_memory(gArray);
+    free_cuda_memory(gLeft);
+    free_cuda_memory(gRight);
+
+
+}
 
 void FieldVars1D::initVarsWithZero() {
     int i;
@@ -151,7 +201,7 @@ void FieldVars1D::obtainCellIntfaceValue() {
     }
     cLeft[n_len - 1] = cLeft[n_len - 2];
 
-    for (i = 0; i < n_len; i++) {
+    for (i = 0; i < n_len - 1; i++) {
         cRight[i] = cArray[i+1]  - 0.25 * cSlope[i+1] * ((1.0 - kappa * cSlope[i+1]) * cBarDeltaPlus[i+1] + (1.0 + kappa * cSlope[i+1]) * cBarDeltaMinus[i+1]);
     }
     cRight[0] = cRight[1];
@@ -261,7 +311,7 @@ int FieldVars1D::testSolveConvectiveEq() {
     copy_memory_device_to_host(cArrayMemoryTest, gArray, n_bytes);
     n_failures = compareArrays(cArray, cArrayMemoryTest, n_len);
     
-    printf ("  Validation of 1-dimensional convetive eq:\n");
+    printf ("  Validation of 1-dimensional convetive eq of %s:\n", name);
     printf ("      Correlation factor between 2 memories: %lf\n", Cor);
     validateTwoVarsByCorrelationFactor(cArray, cArrayMemoryTest, "CPU", "GPU", 0.5, n_len);
     if (debug_mode == 0) printTwoVars(cArray, cArrayMemoryTest, n_len);
@@ -312,7 +362,7 @@ int FieldVars1D::testMemoryCopy(double *cArray, double *gArray, double *gArrayMe
 
 int FieldVars1D::testDerivertive() {
     int n_failure = 0;
-    printf("    Testing delta plus and delta minus for minmod:\n");
+    printf("    Testing %s delta plus and delta minus for minmod:\n", name);
     n_failure += testObtainDeltasMinmodAbstract(initArrayWithHeavisiteFunc, gArray, gDeltaPlus, gDeltaMinus, 
         cArray, cDeltaPlusTest, cDeltaMinusTest, n_len, n_bytes, "Heavisite step function");
     n_failure += testObtainDeltasMinmodAbstract(initArrayWithRampFunc, gArray, gDeltaPlus, gDeltaMinus, 
@@ -351,7 +401,7 @@ void FieldVars1D::testMemoryDerivertiveLimiterAndFlux() {
     cDeltaMinusTest = (double *) malloc(n_bytes);  //  temporally memory allocation for test
 
     //  Tesing obtaining Delta+ and Delta- with a variation of initial conditions
-    printf("    Testing delta plus and delta minus for minmod:\n");
+    printf("    Testing %s delta plus and delta minus for minmod:\n", name);
     n_failure += testDerivertive();
     
     free(cDeltaPlusTest);
@@ -419,7 +469,7 @@ int FieldVars1D::testObtainDeltasMinmodAbstract(void (*initArray) (double *cArra
     n_failure += testDeltasMinmodValidation(cLeft,  cDeltaPlusTest,  n_len, "Left", test_name);
 
     //  directly obtaining QR and QL and its test
-    printf("  Directly get QR and QL test:\n");
+    printf("  Directly get QR and QL test of %s:\n", name);
     obtain_cell_intface_value_from_Q_device(gRight, gLeft, gSlope, gBarDeltaPlus, gBarDeltaMinus, gDeltaPlus, gDeltaMinus, gArray, 
         kappa, epsilon, b, dimGrid, dimBlock, n_len);
     copy_memory_device_to_host(cDeltaPlusTest, gRight, n_bytes);
@@ -467,7 +517,7 @@ int  FieldVars1D::validateTwoVarsByCorrelationFactor(double *U, double *V, char 
     double Cor;
     Cor = testObtainCorrelFactor(U, V, n_len);
 
-    if (Cor > threshCor) {
+    if (threshCor > Cor) {
         printf("  Correlation factors between %s and %s was %lf, while threshold is %lf\n  COR FACTOR IS TOO LOW\n", 
         var_name_1, var_name_2, Cor, threshCor);
         return -1;

@@ -16,13 +16,13 @@ class ShallowWaterEq {
         char name[64];
 
 
-        FieldVars1D H, HU;
-        
+        FieldVars1D H, HU, Hflux, HUflux;
 
         ShallowWaterEq();
         ShallowWaterEq(int n_len);
         void init(int n_len_inp, char name_inp[64]);
 
+        void deinit();
 
 
 };
