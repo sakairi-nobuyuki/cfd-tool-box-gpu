@@ -1,9 +1,8 @@
 PROGRAM = hoge
 OBJS    = hoge.o
-CXX  = g++
+CXX     = g++
 CPPFLAGS = -Wall -O3 -fPIC
 CPPFLAGS += -I$(CPPUTEST_HOME)/include
-#LD_LIBRARIES = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 LD_LIBRARIES = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 
