@@ -1,8 +1,10 @@
-PROGRAM = hoge
-OBJS    = hoge.o
+PROGRAM = magical_banana
+OBJS    = magical_banana.o
 CXX     = g++
+MAKEFILE_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 CPPFLAGS = -Wall -O3 -fPIC
 CPPFLAGS += -I$(CPPUTEST_HOME)/include
+CPPFLAGS += -I$(MAKEFILE_DIR)include
 LD_LIBRARIES = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 

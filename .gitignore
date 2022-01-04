@@ -1,0 +1,12 @@
+#.gitignore
+*o
+test_cuda
+test_c
+test_raw_cuda
+*dat
+test_convective
+*cuda-*
+*main
+
+### build dirs
+*/build/*
