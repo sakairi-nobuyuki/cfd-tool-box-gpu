@@ -1,7 +1,8 @@
-#ifndef __MEMORY_CONFIG__
-#define __MEMORY_CONFIG__
+#ifndef __MEMORY_CONFIG_H__
+#define __MEMORY_CONFIG_H__
 
 class MemoryConfig{
+    private:
     public:
         // int n_len_x, n_len_y:
         //   X and Y directional calculation mesh size.
@@ -20,6 +21,7 @@ class MemoryConfig{
         //   n_bytes = n_bytes_x * n_bytes_y.
         //   n_bytes_x = (n_len_x + n_pad_x) * sizeof(double)
         //   n_bytes_y = (n_len_y + n_pad_y) * sizeof(double)
+        MemoryConfig();
         dim3 gird_dimension, block_dimension;
         int n_bytes;
         int n_len_x, n_len_y;
