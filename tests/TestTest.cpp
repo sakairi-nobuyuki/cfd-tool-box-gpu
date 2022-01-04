@@ -1,4 +1,0 @@
-TEST_GROUP(FirstTestGroup) {
-
-    
-}
