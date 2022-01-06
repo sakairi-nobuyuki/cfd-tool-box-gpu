@@ -1,7 +1,7 @@
+MAKEFILE_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 PROGRAM = magical_banana
 OBJS    = magical_banana.o
 CXX     = g++
-MAKEFILE_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 CPPFLAGS = -Wall -O3 -fPIC
 CPPFLAGS += -I$(CPPUTEST_HOME)/include
 CPPFLAGS += -I$(MAKEFILE_DIR)include
@@ -13,7 +13,6 @@ $(PROGRAM):$(OBJS)
 
 clean:
 	rm $(OBJS)	
-
 
 .SUFFIXES: .o .cpp .cu
 

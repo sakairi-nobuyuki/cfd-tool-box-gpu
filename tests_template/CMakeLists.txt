@@ -6,6 +6,7 @@ project(magical_banana CXX)
 
 # add subdirectories
 add_subdirectory(src)
+add_subdirectory(tests)
 
 
 
