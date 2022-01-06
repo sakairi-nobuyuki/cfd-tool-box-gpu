@@ -1,16 +1,11 @@
-#add_library(test_magical_banana
-#  SHARED
-#    test_magical_banana.cpp
-#  )
-#target_link_libraries(magical_banana)
-#target_include_directories(magical_banana
-#  PUBLIC ${PROJECT_SOURCE_DIR}/include
-#)
-target_include_directories(cpputest
-  PUBLIC ${CPPUTEST_HOME}/include
-)
-target_link_directories(cpputest
-  PUBLIC ${CPPUTEST_HOME}/lib
-)
+# include CppUTest headers
+include_directories($ENV{CPPUTEST_HOME}/include)
+
+# add cpputest library
+add_library(imp_cpputest STATIC IMPORTED)
+set_property(TARGET imp_cpputest PROPERTY
+             IMPORTED_LOCATION $ENV{CPPUTEST_HOME}/lib/libCppUTest.a)
+
 add_executable(main test_magical_banana.cpp)
-target_link_libraries(main magical_banana CppUTest CppUTestExt)
+target_link_libraries(main magical_banana imp_cpputest)
+             
