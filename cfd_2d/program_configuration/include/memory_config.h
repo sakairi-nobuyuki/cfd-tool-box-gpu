@@ -22,6 +22,7 @@ class MemoryConfig{
         //   n_bytes_x = (n_len_x + n_pad_x) * sizeof(double)
         //   n_bytes_y = (n_len_y + n_pad_y) * sizeof(double)
         MemoryConfig();
+        MemoryConfig(int n_len_x_inp, int n_len_y_inp);
         dim3 gird_dimension, block_dimension;
         int n_bytes;
         int n_len_x, n_len_y;
