@@ -5,21 +5,30 @@
 TEST_GROUP(TestConstructorDimInput){
 
     TEST_SETUP(){}
+
 };
+
 TEST(TestConstructorDimInput, DEFAULT){
-    MemoryConfig memory_config(10, 11);
+    MemoryConfig memory_config;
     
-    CHECK_EQUAL(10, memory_config.n_len_x);
-    CHECK_EQUAL(11, memory_config.n_len_y);
-    CHECK_EQUAL(128, memory_config.n_optimal_memory_granularity);
+    CHECK_EQUAL(128, memory_config.getGpuMemoryGranularity());
+
 }
 
+
+
 TEST(TestConstructorDimInput, CUDA_MEMORY_SIZE){
-    MemoryConfig memory_config(10, 11, 256);
+    MemoryConfig memory_config(256);
     
-    CHECK_EQUAL(10, memory_config.n_len_x);
-    CHECK_EQUAL(11, memory_config.n_len_y);
-    CHECK_EQUAL(256, memory_config.n_optimal_memory_granularity);
+    CHECK_EQUAL(256, memory_config.getGpuMemoryGranularity());
+
+}
+
+
+TEST(TestConstructorDimInput, TEST_BYTES){
+    MemoryConfig memory_config;
+    
+    CHECK_EQUAL(896, memory_config.obtainBytes(10, 11));
 }
 
 

@@ -10,5 +10,3 @@ add_subdirectory(tests)
 
 
 
-# a.outという実行ファイルをmain.cppとhello.cppから作成
-#add_executable(main main.cpp magical_banana.cpp)
