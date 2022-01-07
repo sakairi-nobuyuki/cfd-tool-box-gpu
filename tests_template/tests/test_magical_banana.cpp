@@ -11,11 +11,13 @@ TEST(TestGroup1, MELON_PEACH){
 
 TEST_GROUP(TestMagicalBanana){
     MagicalBanana mb;
+    
     TEST_SETUP() {
 
     }
 };
 TEST(TestMagicalBanana, MAGICAL_TWO){
+    MagicalBanana mb_arg(1);
     DOUBLES_EQUAL(mb.MagicalTwo(2), 4.0, 1.0E-06);
 }
 

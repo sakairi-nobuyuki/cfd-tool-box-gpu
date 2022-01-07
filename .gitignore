@@ -9,4 +9,4 @@ test_convective
 *main
 
 ### build dirs
-*/build/*
+build/
