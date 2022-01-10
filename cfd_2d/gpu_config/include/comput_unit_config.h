@@ -1,7 +1,7 @@
 #ifndef __COMPUT_UNIT_CONFIG_H__
 #define __COMPUT_UNIT_CONFIG_H__
 
-class ComputUnitDimension{
+class ComputUnitConfig{
     // Data class for calculation unit wuth GPU.
     // Used for information about number of block, grid, or thread. 
     private:
@@ -13,11 +13,11 @@ class ComputUnitDimension{
         int _max_x, _max_y, _max_z, _max;
     public:
         int x, y, z;
-        ComputUnitDimension();
-        ComputUnitDimension(int n_max_x, int n_max_y, int n_max_z, int n_max);
-        ComputUnitDimension(int n_max_x, int n_max_y, int n_max_z);
-        ComputUnitDimension(int n_max_x, int n_max_y);
-        ComputUnitDimension(int n_max);
+        ComputUnitConfig();
+        ComputUnitConfig(int n_max_x, int n_max_y, int n_max_z, int n_max);
+        ComputUnitConfig(int n_max_x, int n_max_y, int n_max_z);
+        ComputUnitConfig(int n_max_x, int n_max_y);
+        ComputUnitConfig(int n_max);
 };
 
 
