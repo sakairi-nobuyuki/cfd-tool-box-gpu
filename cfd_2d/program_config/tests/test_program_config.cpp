@@ -15,16 +15,12 @@ TEST(TestConstructorDimInput, DEFAULT){
 
 }
 
-
-
 TEST(TestConstructorDimInput, CUDA_MEMORY_SIZE){
     MemoryConfig memory_config(256);
     
     CHECK_EQUAL(256, memory_config.getGpuMemoryGranularity());
 
 }
-
-
 TEST(TestConstructorDimInput, TEST_BYTES){
     MemoryConfig memory_config;
     

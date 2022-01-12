@@ -2,6 +2,7 @@ find_package(CUDA REQUIRED)
 if(CUDA_FOUND)
     message("Cuda version: " ${CUDA_VERSION})
     CUDA_ADD_LIBRARY(gpu_config STATIC
+        comput_unit_config.cu
         gpu_config.cu
         
     )

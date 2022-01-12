@@ -18,6 +18,13 @@ class ComputUnitConfig{
         ComputUnitConfig(int n_max_x, int n_max_y, int n_max_z);
         ComputUnitConfig(int n_max_x, int n_max_y);
         ComputUnitConfig(int n_max);
+        void set3DimConfig(int n_max_x, int n_max_y, int n_max_z);
+        void set2DimConfig(int n_max_x, int n_max_y);
+        void set1DimConfig(int n_max_x);
+        int getDimX();
+        int getDimY();
+        int getDimZ();
+        int getDim();
 };
 
 

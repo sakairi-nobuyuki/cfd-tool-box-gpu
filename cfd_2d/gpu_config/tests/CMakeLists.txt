@@ -7,6 +7,6 @@ set_property(TARGET imp_cpputest PROPERTY
 # include directory of program config
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-#add_executable(test_gpu_config test_gpu_config.cpp)             
-#target_link_libraries(test_gpu_config gpu_config imp_cpputest)
+add_executable(test_gpu_config test_gpu_config.cpp)             
+target_link_libraries(test_gpu_config gpu_config imp_cpputest)
 
