@@ -35,7 +35,7 @@ GpuConfig::GpuConfig(int i_dev) {
     printf("  Max size of each dimension of a grid: (%d, %d, %d)\n", 
         _gridConf.getDimX(), _gridConf.getDimY(), _gridConf.getDimZ()); 
     printf("  Initializing GPU config finished\n");
-        //exit(EXIT_SUCCESS);
+    //exit(EXIT_SUCCESS);
 }
 
 cudaDeviceProp GpuConfig::getGpuDeviceProp(int i_dev) {
